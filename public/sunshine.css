@@ -1,16 +1,30 @@
-.sunshine-toolbar, .sunshine-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin-bottom: 24px; }
-.sunshine-toolbar label, .sunshine-controls label, .sunshine-details label { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
-.sunshine-controls h2 { margin: 0 auto 0 0; color: var(--heading); font: 400 25px/1.3 Georgia, serif; }
+.sunshine-layout { grid-template-areas: "chart controls"; }
+.sunshine-chart-area { grid-area: chart; }
+.sunshine-panel { grid-area: controls; min-width: 0; }
+.sunshine-toolbar, .sunshine-controls { display: flex; flex-direction: column; gap: 12px; }
+.sunshine-toolbar > label { color: var(--heading); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; }
+.sunshine-controls label { display: flex; flex-direction: column; align-items: stretch; gap: 8px; font-size: 12px; font-weight: 600; }
+.sunshine-details label { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
 .sunshine-toolbar select, .sunshine-controls select, .sunshine-details select, #sunshine-refresh { padding: 9px 12px; border: 1px solid var(--panel-border); border-radius: 5px; background: var(--panel-bg); color: var(--heading); }
-#sunshine-coverage { margin-left: auto; color: var(--hint-text); font-size: 12px; }
+.sunshine-panel .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; margin: 0 0 16px; }
+.sunshine-panel .tab { padding: 8px 6px !important; }
+.sunshine-panel .chart-mode-switch { flex-direction: column; margin-bottom: 16px; }
+.sunshine-panel .chart-mode-switch button { width: 100%; }
+.sunshine-panel .individual-controls { margin: 0; }
+.sunshine-panel .individual-controls form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 7px; }
+.sunshine-panel .individual-controls .hint, .sunshine-panel .individual-average { grid-column: 1 / -1; }
+.sunshine-panel input[type="checkbox"] { width: auto; padding: 0 !important; }
+#sunshine-coverage { color: var(--hint-text); font-size: 11px; line-height: 1.6; }
+#sunshine-status:empty { display: none; }
 [hidden] { display: none !important; }
 .sunshine-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
 .sunshine-summary article { padding: 18px 20px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 7px; }
 .sunshine-summary h3 { margin: 0 0 12px; color: var(--hint-text); font-size: 11px; font-weight: 600; }
 .sunshine-summary strong { display: block; color: var(--heading); font: 400 30px/1.2 Georgia, serif; }
 .sunshine-summary p { margin: 10px 0 0; color: var(--hint-text); font-size: 12px; }
-#sunshine-chart { height: 560px; }
-.sunshine-details { margin-top: 24px; }
+#sunshine-chart { width: 100%; max-width: 100%; height: 640px; overflow: hidden; border: 1px solid var(--panel-border); border-radius: 8px; background: var(--panel-bg); }
+#comparison-window { margin-top: 14px; }
+.sunshine-details { margin-top: 14px; padding: 16px; border: 1px solid var(--panel-border); border-radius: 6px; background: var(--panel-bg); }
 .sunshine-details summary, .sunshine-notes summary { cursor: pointer; color: var(--heading); font-weight: 600; }
 .sunshine-details label { margin: 18px 0; }
 .sunshine-table-scroll { max-height: 500px; overflow: auto; border: 1px solid var(--panel-border); border-radius: 6px; }
@@ -19,13 +33,10 @@
 .rank-table th { position: sticky; top: 0; }
 .sunshine-notes { margin-top: 16px; color: var(--hint-text); font-size: 12px; }
 .sunshine-notes li { margin: 7px 0; }
-@media (max-width: 650px) {
+@media (max-width: 760px) {
   .sunshine-summary { grid-template-columns: 1fr; gap: 8px; }
   .sunshine-summary article { padding: 14px 16px; }
   .sunshine-summary strong { font-size: 26px; }
-  .sunshine-controls h2 { width: 100%; }
-  #sunshine-coverage { width: 100%; margin-left: 0; }
-  #sunshine-chart { height: 440px; }
-  .tabs { display: flex; max-width: 100%; overflow-x: auto; }
-  .tab { flex: 1; padding: 8px 10px !important; }
+  #sunshine-chart { height: 540px; }
+  .sunshine-details { padding: 12px; }
 }

@@ -4,10 +4,10 @@
 <title>Sunshine | Weather Site K</title>
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="site.css?v=overview-1"><link rel="stylesheet" href="theme.css?v=design-1">
-<link rel="stylesheet" href="temperature.css?v=views-6"><link rel="stylesheet" href="sunshine.css?v=2"><script src="appearance.js?v=indices-1"></script>
+<link rel="stylesheet" href="temperature.css?v=views-6"><link rel="stylesheet" href="sunshine.css?v=3"><script src="appearance.js?v=indices-1"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="individual-comparison.js?v=2"></script>
-<script type="module" src="sunshine.mjs?v=5"></script>
+<script type="module" src="sunshine.mjs?v=6"></script>
 </head><body>
 <a class="skip-link" href="#main-content">Skip to content</a>
 <header class="site-header">
@@ -44,40 +44,52 @@
 </header>
 <main id="main-content" tabindex="-1">
 <section class="page-heading"><h1>Sunshine</h1><span class="dataset-tag">Monthly totals · hours</span></section>
-<div class="sunshine-toolbar">
-  <label for="sunshine-dataset">Dataset <select id="sunshine-dataset"><option value="sunuk">UK wide</option><option value="suneng">England</option><option value="suneaw">England and Wales</option><option value="sunmid">Midlands</option></select></label>
-  <button id="sunshine-refresh" type="button">Refresh data</button>
-  <span id="sunshine-coverage"></span>
-</div>
-<div class="tabs" aria-label="Comparison period">
-  <button class="tab active" type="button" data-period="annual" aria-pressed="true">Annual</button>
-  <button class="tab" type="button" data-period="months" aria-pressed="false">Months</button>
-  <button class="tab" type="button" data-period="seasons" aria-pressed="false">Seasons</button>
-  <button class="tab" type="button" data-period="hex" aria-pressed="false">Hex seasons</button>
-</div>
-<div class="chart-mode-switch" id="sunshine-view-controls" role="group" aria-label="Sunshine chart type" hidden>
-  <button type="button" data-sunshine-view="historical" aria-pressed="true">Historical comparison</button>
-  <button type="button" data-sunshine-view="individual" aria-pressed="false">Individual totals</button>
-</div>
-<section aria-labelledby="comparison-title">
-  <div class="sunshine-controls"><h2 id="comparison-title">Historical comparison</h2>
-    <label id="period-control" for="sunshine-period" hidden>Period <select id="sunshine-period"></select></label>
-    <label id="sunshine-window-control" for="sunshine-window">Compare <select id="sunshine-window"><option value="full">Full period</option><option value="to-date">Year to date</option></select></label>
-  </div>
-  <div id="sunshine-year-control" class="individual-controls" hidden></div>
-  <p id="sunshine-status" role="status">Loading server data…</p>
-  <noscript>Enable JavaScript to load sunshine observations.</noscript>
-  <div id="sunshine-content" hidden>
-    <p id="comparison-window" class="hint"></p>
-    <div class="sunshine-summary" id="sunshine-summary"></div>
-    <div id="sunshine-chart" aria-label="Historical sunshine totals"></div>
+<div class="layout sunshine-layout">
+  <aside class="control-panel sunshine-panel" aria-label="Sunshine chart controls">
+    <div class="sunshine-toolbar">
+      <label for="sunshine-dataset">Dataset</label>
+      <select id="sunshine-dataset"><option value="sunuk">UK wide</option><option value="suneng">England</option><option value="suneaw">England and Wales</option><option value="sunmid">Midlands</option></select>
+      <button id="sunshine-refresh" type="button">Refresh data</button>
+      <span id="sunshine-coverage"></span>
+    </div>
+    <h2>Period</h2>
+    <div class="tabs" aria-label="Comparison period">
+      <button class="tab active" type="button" data-period="annual" aria-pressed="true">Annual</button>
+      <button class="tab" type="button" data-period="months" aria-pressed="false">Months</button>
+      <button class="tab" type="button" data-period="seasons" aria-pressed="false">Seasons</button>
+      <button class="tab" type="button" data-period="hex" aria-pressed="false">Hex seasons</button>
+    </div>
+    <div id="sunshine-view-controls" hidden>
+      <h2>Chart view</h2>
+      <div class="chart-mode-switch" role="group" aria-label="Sunshine chart type">
+        <button type="button" data-sunshine-view="historical" aria-pressed="true">Historical comparison</button>
+        <button type="button" data-sunshine-view="individual" aria-pressed="false">Individual totals</button>
+      </div>
+    </div>
+    <div class="sunshine-controls">
+      <label id="period-control" for="sunshine-period" hidden>Period <select id="sunshine-period"></select></label>
+      <label id="sunshine-window-control" for="sunshine-window">Compare <select id="sunshine-window"><option value="full">Full period</option><option value="to-date">Year to date</option></select></label>
+    </div>
+    <div id="sunshine-year-panel" hidden>
+      <h2>Years in view</h2>
+      <div id="sunshine-year-control" class="individual-controls"></div>
+    </div>
+  </aside>
+  <section class="chart-area sunshine-chart-area" aria-label="Sunshine comparison">
+    <p id="sunshine-status" role="status">Loading server data…</p>
+    <noscript>Enable JavaScript to load sunshine observations.</noscript>
+    <div id="sunshine-content" hidden>
+      <div id="sunshine-chart" aria-label="Historical sunshine totals"></div>
+      <p id="comparison-window" class="summary-box"></p>
+      <div class="sunshine-summary" id="sunshine-summary"></div>
     <details class="sunshine-details" id="sunshine-history-details"><summary>Values and rankings</summary>
       <label for="sunshine-sort">Order <select id="sunshine-sort"><option value="year">Latest year first</option><option value="high">Sunniest first</option><option value="low">Dullest first</option></select></label>
       <div class="sunshine-table-scroll"><table class="rank-table"><caption id="sunshine-table-caption"></caption><thead><tr><th scope="col">Year</th><th scope="col">Sunshine (hours)</th><th scope="col">Rank (sunniest)</th><th scope="col">Coverage</th></tr></thead><tbody id="sunshine-rows"></tbody></table></div>
     </details>
     <details class="sunshine-details" id="sunshine-individual-details" hidden><summary>Individual values</summary><div class="sunshine-table-scroll"><table class="rank-table"><caption id="sunshine-individual-caption"></caption><thead><tr><th scope="col">Period</th><th scope="col">Year / reference</th><th scope="col">Sunshine (hours)</th><th scope="col">Coverage</th></tr></thead><tbody id="sunshine-individual-rows"></tbody></table></div></details>
-  </div>
-</section>
+    </div>
+  </section>
+</div>
 <p class="caption">Source: Met Office HadUK-Grid. <a id="sunshine-source" href="https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/UK.txt">UK wide sunshine data</a>. <span id="sunshine-source-date"></span></p>
 <details class="sunshine-notes"><summary>About these comparisons</summary><ul>
 <li>Individual totals show all months, seasons or hex seasons of up to ten chosen years, with grouped bars and a colour for each year. Hatched bars mark incomplete totals; periods with no observations are blank.</li>

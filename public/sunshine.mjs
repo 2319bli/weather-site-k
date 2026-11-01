@@ -3,9 +3,23 @@ import { SUNSHINE, PERIODS, MONTHS, sunshineHistory, sunshineBreakdown } from '.
 const $ = id => document.getElementById(id);
 const state = { data: null, kind: 'annual', selected: { annual: 'ann', months: '1', seasons: 'win', hex: 'win' }, windows: {}, modes: {}, request: 0 };
 const individualPicker = window.IndividualComparison.createYearPicker($('sunshine-year-control'), 'sunshine', safeRender);
-const mobile = window.matchMedia('(max-width: 650px)');
+const mobile = window.matchMedia('(max-width: 760px)');
 const hours = value => `${value.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`;
 const monthName = value => `${MONTHS[Number(value.slice(5)) - 1]} ${value.slice(0,4)}`;
+
+function plot(traces, title, xaxis, individual = false) {
+  if (!window.Plotly) throw new Error('The chart library could not load. Refresh to try again.');
+  return Plotly.react($('sunshine-chart'), traces, {
+    title: { text: title, font: { size: 18 } },
+    autosize: true, xaxis, yaxis: { title: 'Sunshine (hours)', rangemode: 'tozero', zeroline: false },
+    margin: { l: 58, r: 20, t: 65, b: individual ? Math.max(130, 80 + Math.ceil(traces.length / (mobile.matches ? 2 : 4)) * 22) : 130 },
+    legend: { orientation: 'h', x: 0, y: -0.2, yanchor: 'top', traceorder: 'normal',
+      entrywidthmode: 'fraction', entrywidth: mobile.matches ? 0.5 : 0.25, font: { size: mobile.matches ? 10 : 11 } },
+    hovermode: 'closest', barmode: individual ? 'group' : 'overlay', showlegend: true
+  }, { responsive: true, displaylogo: false, toImageButtonOptions: {
+    filename: `sunshine-${$('sunshine-dataset').value}-${state.kind}-${individual ? 'individual' : 'historical'}`, width: 1400, height: 800, scale: 2
+  } });
+}
 
 function summaryCard(title, value, detail) {
   const card = document.createElement('article');
@@ -31,10 +45,9 @@ async function render() {
   const individual = state.kind !== 'annual' && state.modes[state.kind] === 'individual';
   $('sunshine-view-controls').hidden = state.kind === 'annual';
   document.querySelectorAll('[data-sunshine-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.sunshineView === (individual ? 'individual' : 'historical'))));
-  $('comparison-title').textContent = individual ? 'Individual totals' : 'Historical comparison';
   $('period-control').hidden = individual || state.kind === 'annual';
   $('sunshine-window-control').hidden = individual;
-  $('sunshine-year-control').hidden = !individual;
+  $('sunshine-year-panel').hidden = !individual;
   $('sunshine-history-details').hidden = individual;
   $('sunshine-individual-details').hidden = !individual;
   $('sunshine-summary').hidden = individual;
@@ -60,31 +73,25 @@ async function render() {
   $('sunshine-chart').hidden = !history.rows.length;
   if (!history.rows.length) return;
   const style = getComputedStyle(document.documentElement), color = name => style.getPropertyValue(name).trim();
-  const accent = color('--nav-active-line'), foreground = color('--text-body');
+  const foreground = color('--text-body');
   const traces = [{
     x: history.rows.map(row => row.year), y: history.rows.map(row => row.complete ? row.value : null),
     type: 'scatter', mode: 'lines+markers', name: 'Complete periods', connectgaps: false,
-    line: { color: accent, width: 1.5 }, marker: { color: accent, size: 5 },
+    line: { color: '#3985cb', width: 1.3 }, marker: { color: '#3985cb', size: 4 },
     customdata: history.rows.map(row => [row.rank, row.count]),
     hovertemplate: '%{x}: %{y:.1f} hours<br>Rank %{customdata[0]} · %{customdata[1]} months<extra></extra>'
   }];
   const partial = history.rows.filter(row => !row.complete);
-  if (partial.length) traces.push({ x: partial.map(row => row.year), y: partial.map(row => row.value), type: 'scatter', mode: 'markers', name: 'Incomplete periods', marker: { symbol: 'diamond-open', size: 11, color: foreground, line: { width: 2 } }, customdata: partial.map(row => `${row.count}/${row.expected}`), hovertemplate: '%{x}: %{y:.1f} hours<br>%{customdata} months · unranked<extra></extra>' });
+  if (partial.length) traces.push({ x: partial.map(row => row.year), y: partial.map(row => row.value), type: 'scatter', mode: 'markers', name: 'Incomplete periods', marker: { symbol: 'diamond-open', size: 10, color: '#d77831', line: { width: 2 } }, customdata: partial.map(row => `${row.count}/${row.expected}`), hovertemplate: '%{x}: %{y:.1f} hours<br>%{customdata} months · unranked<extra></extra>' });
   if (latest?.complete) traces.push({ x: [latest.year], y: [latest.value], type: 'scatter', mode: 'markers', name: String(latest.year), marker: { symbol: 'star', size: 13, color: foreground }, hovertemplate: `${latest.year}: %{y:.1f} hours<br>Rank ${latest.rank} of ${history.ranked}<extra></extra>` });
   const normal = complete.filter(row => row.year >= 1991 && row.year <= 2020);
   if (normal.length === 30 && history.rows.length) {
     const average = normal.reduce((sum,row) => sum + row.value,0) / normal.length;
     traces.push({ x: [history.rows[0].year, history.rows.at(-1).year], y: [average,average], type: 'scatter', mode: 'lines', name: '1991–2020 average', line: { color: foreground, dash: 'dot', width: 1 }, hovertemplate: '1991–2020 average: %{y:.1f} hours<extra></extra>' });
   }
-  if (!window.Plotly) throw new Error('The chart library could not load. Refresh to try again.');
-  await Plotly.react($('sunshine-chart'), traces, {
-    autosize: true, paper_bgcolor: color('--panel-bg'), plot_bgcolor: color('--panel-bg'),
-    font: { family: '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif', size: 12, color: foreground },
-    margin: { l: 65, r: 20, t: 25, b: 95 }, hovermode: 'closest',
-    xaxis: { title: 'Year', tickformat: 'd', gridcolor: color('--panel-border'), zeroline: false },
-    yaxis: { title: 'Sunshine (hours)', rangemode: 'tozero', gridcolor: color('--panel-border'), zeroline: false },
-    legend: { orientation: 'h', x: 0, y: -0.18, font: { size: 10 } }
-  }, { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['select2d','lasso2d'] });
+  await plot(traces, `${history.period.label.split(' (')[0]} · ${toDate ? state.kind === 'annual' ? 'Year to date' : 'Period to date' : 'Historical comparison'}`, {
+    title: 'Year', dtick: 10, tickformat: 'd'
+  });
 }
 
 async function renderIndividual() {
@@ -112,15 +119,9 @@ async function renderIndividual() {
     return tr;
   }));
   $('sunshine-chart').hidden = false;
-  if (!window.Plotly) throw new Error('The chart library could not load. Refresh to try again.');
-  await Plotly.react($('sunshine-chart'), window.IndividualComparison.traces(series, 'sunshine', labels, monthName), {
-    autosize: true, paper_bgcolor: color('--panel-bg'), plot_bgcolor: color('--panel-bg'),
-    font: { family: '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif', size: 12, color: color('--text-body') },
-    margin: { l: 65, r: 20, t: 25, b: Math.max(115, 85 + Math.ceil(series.length / (mobile.matches ? 2 : 4)) * 22) }, hovermode: 'closest', showlegend: true, barmode: 'group',
-    legend: { orientation: 'h', x: 0, y: -0.15, yanchor: 'top', entrywidthmode: 'fraction', entrywidth: mobile.matches ? 0.5 : 0.25, font: {size: 11} },
-    xaxis: { type: 'category', categoryorder: 'array', categoryarray: labels, tickangle: 0, tickfont: { size: 10 }, gridcolor: color('--panel-border') },
-    yaxis: { title: 'Sunshine (hours)', rangemode: 'tozero', gridcolor: color('--panel-border'), zeroline: false }
-  }, { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['select2d','lasso2d'] });
+  await plot(window.IndividualComparison.traces(series, 'sunshine', labels, monthName), `${kindLabel} sunshine totals · ${years.length === 1 ? years[0] : `${years.length} years`}`, {
+    type: 'category', categoryorder: 'array', categoryarray: labels, tickangle: 0, tickfont: { size: mobile.matches ? 9 : 12 }
+  }, true);
 }
 function updatePeriodControls() {
   const options = PERIODS[state.kind];
