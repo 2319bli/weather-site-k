@@ -250,6 +250,9 @@ body {
     <link rel="stylesheet" href="theme.css?v=design-1">
     <script src="appearance.js?v=design-1"></script>
     <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="temperature.css?v=views-2">
+    <script src="temperature-data.js?v=views-2"></script>
+    <script src="temperature-views.js?v=views-2"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -296,13 +299,24 @@ body {
         <button class="tab" data-tab="seasons">Seasons</button>
         <button class="tab" data-tab="hex-seasons">Hex Seasons</button>
     </div>
+    <div class="chart-mode-switch" role="group" aria-label="Rainfall chart type">
+        <button type="button" data-chart-mode="cumulative" aria-pressed="true">Cumulative total</button>
+        <button type="button" data-chart-mode="daily" aria-pressed="false">Daily rainfall</button>
+        <button type="button" data-chart-mode="historical" aria-pressed="false">Historical comparison</button>
+    </div>
+    <div id="daily-controls" class="daily-controls" hidden>
+        <label><input id="show-daily-records" type="checkbox" checked> Show wettest daily records</label>
+        <label for="record-year">Records held by <select id="record-year" aria-label="Record year"></select></label>
+    </div>
     <div class="layout">
         <div class="chart-area">
             <div id="chart">Loading...</div>
             <div id="target-summary" class="summary-box"></div>
+            <div id="rainfall-details" aria-live="polite"></div>
         </div>
         <aside class="control-panel">
             <div id="annual-controls" class="tab-content active">
+                <div class="year-controls">
                 <h2>Years in View</h2>
                 <p class="hint">Add up to 10 years. Click x to remove.</p>
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
@@ -333,6 +347,7 @@ body {
                 </form>
                 <small id="year-error" class="error"></small>
                 <ul id="year-list" class="year-list"></ul>
+                </div>
             </div>
             <div id="months-controls" class="tab-content">
                 <h2>Month Selection</h2>
@@ -353,6 +368,7 @@ body {
         <option value="12" selected>December</option>
         </select>
                 </div>
+                <div class="year-controls">
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
                 <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <button type="button" class="mode-button-monthly" data-mode="wettest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
@@ -383,6 +399,7 @@ body {
                 </form>
                 <small id="year-error-monthly" class="error"></small>
                 <ul id="year-list-monthly" class="year-list"></ul>
+                </div>
             </div>
             <div id="seasons-controls" class="tab-content">
                 <h2>Season Selection</h2>
@@ -395,6 +412,7 @@ body {
         <option value="autumn">Autumn</option>
         </select>
                 </div>
+                <div class="year-controls">
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
                 <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <button type="button" class="mode-button-season" data-mode="wettest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
@@ -425,6 +443,7 @@ body {
                 </form>
                 <small id="year-error-season" class="error"></small>
                 <ul id="year-list-season" class="year-list"></ul>
+                </div>
             </div>
             <div id="hex-seasons-controls" class="tab-content">
                 <h2>Hex-Season Selection</h2>
@@ -439,6 +458,7 @@ body {
         <option value="pha">Phaier</option>
         </select>
                 </div>
+                <div class="year-controls">
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
                 <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <button type="button" class="mode-button-hex-season" data-mode="wettest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
@@ -469,11 +489,13 @@ body {
                 </form>
                 <small id="year-error-hex-season" class="error"></small>
                 <ul id="year-list-hex-season" class="year-list"></ul>
+                </div>
             </div>
+            <p class="historical-help">All archive years are included. Values and rankings are in the table below the chart.</p>
         </aside>
     </div>
     <p class="caption">
-        Data source: <code>PrecipitationEWP.csv</code> (daily EWP values, mm).
+        Data source: <code>PrecipitationEWP.csv</code> (daily EWP values, mm), loaded from the server.
     </p>
 
     <script>
@@ -852,6 +874,12 @@ body {
             const formHexSeason = document.getElementById("year-form-hex-season");
             const inputHexSeason = document.getElementById("year-input-hex-season");
             const errorElHexSeason = document.getElementById("year-error-hex-season");
+            const alternateViews = WeatherViews.create(rows, [], chartEl, summaryEl, COLOR_PALETTE, () => {
+                if (state.currentView === "annual") renderAnnualChart();
+                else if (state.currentView === "months") renderMonthlyChart();
+                else if (state.currentView === "seasons") renderSeasonChart();
+                else renderHexSeasonChart();
+            }, "rainfall");
 
             function updateModeButtons(selector, mode) {
                 document.querySelectorAll(selector).forEach((btn) => {
@@ -958,6 +986,8 @@ body {
                 const selectedYears = state.years.length
                     ? state.years
                     : getAnnualPresetYears(state.rows, state.annualMode).filter((y) => availableYears.has(y));
+
+                if (alternateViews.render("annual", null, selectedYears)) return;
 
                 const byYear = new Map();
                 selectedYears.forEach((y) => byYear.set(y, []));
@@ -1086,6 +1116,9 @@ body {
                     ? state.monthlyYears
                     : getMonthlyPresetYears(state.rows, state.selectedMonth, state.monthlyMode).filter((y) => availableYears.has(y));
 
+                renderMonthlyYearList();
+                if (alternateViews.render("months", state.selectedMonth, yearsToShow)) return;
+
                 const traces = [];
                 yearsToShow.forEach((year, idx) => {
                     const entries = state.rows
@@ -1202,6 +1235,9 @@ body {
                 const fallbackYears = getSeasonPresetYears(state.rows, season, state.seasonMode)
                     .filter((y) => hasSeasonData(y));
                 const yearsToShow = state.seasonYears.length ? state.seasonYears : fallbackYears;
+                renderSeasonYearList();
+                if (alternateViews.render("seasons", season, yearsToShow)) return;
+
                 const traces = [];
 
                 yearsToShow.forEach((year, idx) => {
@@ -1303,6 +1339,9 @@ body {
                 const fallbackYears = getHexSeasonPresetYears(state.rows, season, state.hexSeasonMode)
                     .filter((y) => hasHexSeasonData(y));
                 const yearsToShow = state.hexSeasonYears.length ? state.hexSeasonYears : fallbackYears;
+                renderHexSeasonYearList();
+                if (alternateViews.render("hex-seasons", season, yearsToShow)) return;
+
                 const traces = [];
 
                 yearsToShow.forEach((year, idx) => {

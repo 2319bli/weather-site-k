@@ -1,4 +1,4 @@
-/* Calendar-based analyses of observed daily mean CET. No forecasts enter this archive. */
+/* Shared calendar analyses for observed CET and EWP; the original filename is retained for cached pages. */
 (function (root) {
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const SEASONS = {
@@ -96,29 +96,31 @@
         for (const row of entries(archive, period, year)) {
             const record = archive.records.get(row.key);
             for (const [bound, kind] of [['high', 'Warmest'], ['low', 'Coldest']]) {
-                if (row.value === record[bound]) held.push({ ...row, x: positions.get(row.key), kind,
+                if (row.value === record[bound]) held.push({ ...row, x: positions.get(row.key), kind, bound,
                     years: record[`${bound}Years`], tied: record[`${bound}Years`].length > 1 });
             }
         }
         return held;
     }
 
-    function history(archive, period) {
+    function history(archive, period, aggregation = 'mean') {
         const result = years(archive, period).map(year => {
             const rows = entries(archive, period, year);
             const expected = slots(period, year).length;
-            const mean = rows.reduce((sum, row) => sum + row.value, 0) / rows.length;
-            return { year, mean, days: rows.length, expected, complete: rows.length === expected,
+            const total = rows.reduce((sum, row) => sum + row.value, 0);
+            const mean = total / rows.length;
+            return { year, mean, total, value: aggregation === 'total' ? total : mean,
+                days: rows.length, expected, complete: rows.length === expected,
                 first: rows[0].iso, last: rows.at(-1).iso, rank: null };
         });
-        const ranked = result.filter(row => row.complete).sort((a, b) => b.mean - a.mean);
+        const ranked = result.filter(row => row.complete).sort((a, b) => b.value - a.value);
         ranked.forEach((row, index) => {
-            row.rank = index && Math.abs(row.mean - ranked[index - 1].mean) < 1e-10 ? ranked[index - 1].rank : index + 1;
+            row.rank = index && Math.abs(row.value - ranked[index - 1].value) < 1e-10 ? ranked[index - 1].rank : index + 1;
         });
         return result;
     }
 
     const api = { period, slots, createArchive, years, entries, daily, heldRecords, history };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
-    else root.CETAnalysis = api;
+    else root.WeatherAnalysis = root.CETAnalysis = api;
 })(typeof window !== 'undefined' ? window : globalThis);

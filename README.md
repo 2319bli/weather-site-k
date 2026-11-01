@@ -22,6 +22,12 @@ Daily records show the archive's warmest and coldest daily mean for each calenda
 
 Historical comparison plots the observed mean of the chosen period for every archive year, with a values/rankings table. Only complete periods are ranked; incomplete periods use hollow diamonds and show their observed coverage. Forecasts never enter the record range, record holders or historical means. Daily curves align by calendar date, with a gap on 29 February in non-leap years. Winter is labelled by its January/February year and includes the preceding December. Historical period means include leap day when present.
 
+## Rainfall views
+
+The rainfall page offers **Cumulative total**, **Daily rainfall** and **Historical comparison** for annual, monthly, seasonal and hex-seasonal periods. The existing cumulative totals, projections and year presets are preserved. Daily rainfall shows observed EWP amounts, with optional wettest-date records, a record-year selector and tied record holders. Historical comparison shows each period's total rainfall across all archive years, with wettest/driest highlights and a values/rankings table. Incomplete periods are marked separately and unranked. Daily and historical modes exclude the cumulative view's climatological projections.
+
+Both pages share calendar and view helpers (retaining their original `temperature-*.js` filenames for existing pages). Rainfall uses totals in mm; temperature uses means in °C. The server data, mixed date parser, leap-day alignment and winter-year convention are retained.
+
 ## Terminal
 
 Open **Terminal** from the public site and sign in with the admin password. The password is not in this repository or the browser code. Cloudflare stores a salted PBKDF2 verifier as the `ADMIN_PASSWORD_HASH` secret. Login attempts are rate limited; sessions use Secure, HttpOnly, SameSite cookies and expire after eight hours. Every admin API requires a valid session, and writes require a matching Origin. Changing the password invalidates existing sessions.
@@ -76,6 +82,8 @@ npm test
 Dashboard tests check independently calculated archive statistics, partial periods, ties, leap days, year boundaries and missing data. Tests compare every original HEI/FEI bar against the Python exports and cover annual replacements, leap days, rankings, every original CET/EWP archive row, date validation, password hashing, protected routes, CSRF checks, login limits, logout, shared saves, forecast updates, concurrent writes and observed/forecast reconciliation. Integration tests use an isolated local database and never change production weather data.
 
 Temperature tests cover calendar alignment, winter boundaries, tied and superseded daily records, forecast exclusion, complete and incomplete historical periods, duplicate observations and independently grouped archive values. Browser checks compare cumulative trace values before and after the new view controls and exercise every mode, record selection, period selectors and mobile layouts.
+
+Rainfall tests distinguish period totals from daily means, preserve zero rainfall and wettest-record ties, and compare all annual, February, winter and Phaier totals against independent sums from the full EWP archive. Browser checks cover all 12 rainfall modes, unchanged cumulative values, record toggles, year controls, period selectors and mobile layouts, along with temperature regressions.
 
 ## Branding and colour schemes
 
