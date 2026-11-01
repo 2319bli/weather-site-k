@@ -4,9 +4,9 @@
 <title>Sunshine | Weather Site K</title>
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="site.css?v=overview-1"><link rel="stylesheet" href="theme.css?v=design-1">
-<link rel="stylesheet" href="sunshine.css?v=1"><script src="appearance.js?v=indices-1"></script>
+<link rel="stylesheet" href="temperature.css?v=views-4"><link rel="stylesheet" href="sunshine.css?v=2"><script src="appearance.js?v=indices-1"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script type="module" src="sunshine.mjs?v=2"></script>
+<script type="module" src="sunshine.mjs?v=3"></script>
 </head><body>
 <a class="skip-link" href="#main-content">Skip to content</a>
 <header class="site-header">
@@ -54,10 +54,15 @@
   <button class="tab" type="button" data-period="seasons" aria-pressed="false">Seasons</button>
   <button class="tab" type="button" data-period="hex" aria-pressed="false">Hex seasons</button>
 </div>
+<div class="chart-mode-switch" id="sunshine-view-controls" role="group" aria-label="Sunshine chart type" hidden>
+  <button type="button" data-sunshine-view="historical" aria-pressed="true">Historical comparison</button>
+  <button type="button" data-sunshine-view="individual" aria-pressed="false">Individual totals</button>
+</div>
 <section aria-labelledby="comparison-title">
   <div class="sunshine-controls"><h2 id="comparison-title">Historical comparison</h2>
     <label id="period-control" for="sunshine-period" hidden>Period <select id="sunshine-period"></select></label>
-    <label for="sunshine-window">Compare <select id="sunshine-window"><option value="full">Full period</option><option value="to-date">Year to date</option></select></label>
+    <label id="sunshine-window-control" for="sunshine-window">Compare <select id="sunshine-window"><option value="full">Full period</option><option value="to-date">Year to date</option></select></label>
+    <label id="sunshine-year-control" for="sunshine-year" hidden>Year <select id="sunshine-year"></select></label>
   </div>
   <p id="sunshine-status" role="status">Loading server data…</p>
   <noscript>Enable JavaScript to load sunshine observations.</noscript>
@@ -65,14 +70,16 @@
     <p id="comparison-window" class="hint"></p>
     <div class="sunshine-summary" id="sunshine-summary"></div>
     <div id="sunshine-chart" aria-label="Historical sunshine totals"></div>
-    <details class="sunshine-details"><summary>Values and rankings</summary>
+    <details class="sunshine-details" id="sunshine-history-details"><summary>Values and rankings</summary>
       <label for="sunshine-sort">Order <select id="sunshine-sort"><option value="year">Latest year first</option><option value="high">Sunniest first</option><option value="low">Dullest first</option></select></label>
       <div class="sunshine-table-scroll"><table class="rank-table"><caption id="sunshine-table-caption"></caption><thead><tr><th scope="col">Year</th><th scope="col">Sunshine (hours)</th><th scope="col">Rank (sunniest)</th><th scope="col">Coverage</th></tr></thead><tbody id="sunshine-rows"></tbody></table></div>
     </details>
+    <details class="sunshine-details" id="sunshine-individual-details" hidden><summary>Individual values</summary><div class="sunshine-table-scroll"><table class="rank-table"><caption id="sunshine-individual-caption"></caption><thead><tr><th scope="col">Period</th><th scope="col">Sunshine (hours)</th><th scope="col">Coverage</th></tr></thead><tbody id="sunshine-individual-rows"></tbody></table></div></details>
   </div>
 </section>
 <p class="caption">Source: Met Office HadUK-Grid. <a id="sunshine-source" href="https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/UK.txt">UK wide sunshine data</a>. <span id="sunshine-source-date"></span></p>
 <details class="sunshine-notes"><summary>About these comparisons</summary><ul>
+<li>Individual totals show all months, seasons or hex seasons of one chosen year. Hatched bars mark incomplete totals; periods with no observations are blank.</li>
 <li>Values are total sunshine hours. Only complete comparison periods receive a rank; ties share the same rank. Incomplete periods use hollow diamonds.</li>
 <li>Year/period-to-date compares the same complete months in every year, through the latest confirmed month. Daily sunshine data is not available here.</li>
 <li>Winter includes the preceding December and is labelled by its January/February year. Hex seasons are consecutive two-month periods starting in January.</li>

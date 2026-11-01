@@ -30,6 +30,12 @@ The rainfall page offers **Cumulative total**, **Daily rainfall** and **Historic
 
 Both pages share calendar and view helpers (retaining their original `temperature-*.js` filenames for existing pages). Rainfall uses totals in mm; temperature uses means in °C. The server data, mixed date parser, leap-day alignment and winter-year convention are retained.
 
+### Individual totals
+
+On temperature, rainfall and sunshine, the Months, Seasons and Hex seasons tabs also offer **Individual totals** with a single year selector. Months shows all 12 months, Seasons all four seasons, and Hex seasons all six two-month periods. The selected year is retained when changing breakdown types. Sunshine retains its regional dataset dropdown.
+
+Rainfall and sunshine use bar charts of each period’s separate total. Temperature uses a line chart of each period’s mean CET, weighted by observed days rather than an average of monthly means. Forecasts and projections are excluded. Winter includes the preceding December and is labelled by its January/February year; leap days are included. Sunshine preserves published seasonal totals when available. Hatched bars or hollow temperature markers identify incomplete periods, while missing periods stay blank rather than becoming zero. An expandable table gives values and coverage. Existing cumulative, daily and historical modes remain available.
+
 ### Historical comparison to date
 
 On either page, historical comparison defaults to **Full period**. Choose **Year to date** in the annual tab to compare 1 January through that dataset's latest observed date in every year. The latest year gets a separate marker and rank. CET and EWP use their own observation cutoffs. The setting is remembered separately for each period tab during the visit.
@@ -40,7 +46,7 @@ To-date comparisons exclude 29 February from every year, so all years use the sa
 
 ## Sunshine
 
-`sunshine.html` compares sunshine totals in hours across all years from 1910, with annual, monthly, seasonal and hex-seasonal periods. The dataset selector offers UK wide, England, England and Wales, and Midlands. There is only historical comparison because these sources contain monthly totals. Full-period comparisons mark incomplete years separately and leave them unranked; year/period-to-date compares the same available months in every year. Rankings share ties. A values table, sunniest/dullest highlights and a 1991–2020 average accompany the chart.
+`sunshine.html` compares sunshine totals in hours across all years from 1910, with annual, monthly, seasonal and hex-seasonal periods. The dataset selector offers UK wide, England, England and Wales, and Midlands. Historical comparison and individual-period breakdowns use these monthly totals; there is no daily sunshine view. Full-period comparisons mark incomplete years separately and leave them unranked; year/period-to-date compares the same available months in every year. Rankings share ties. A values table, sunniest/dullest highlights and a 1991–2020 average accompany the chart.
 
 The baseline files in `public/data/sunshine/` are unchanged copies of the Met Office HadUK-Grid [UK](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/UK.txt), [England](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/England.txt), [England and Wales](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/England_and_Wales.txt) and [Midlands](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Midlands.txt) files, updated 1 October 2026 and containing monthly observations through September 2026. Fixed-width parsing preserves blank future months and missing aggregates. Published complete annual/seasonal totals are retained; hex-season totals and newly completed periods sum the rounded monthly values. Winter uses the preceding December. Small rounding differences from published aggregates are expected.
 
@@ -112,3 +118,5 @@ To-date tests cover differing observation cutoffs, both directions of leap-year 
 The K mark in `public/logo.svg` is the site logo and favicon. Colour schemes are Daybreak, Midnight, Terracotta, Aurora, Atlantic, Eclipse, Amethyst, Meadow and Ember. Atlantic is the default; saved choices retain their existing palette IDs.
 
 Sunshine tests verify every imported monthly cell and published aggregate, period totals, fixed-width missing columns, ties, incomplete periods, matching-month comparisons, winter rollover, strict monthly command syntax, region isolation, authentication, CSRF and concurrent updates. Terminal-handler integration tests use an isolated database.
+
+Individual-breakdown tests compare all three period types with independently grouped CET/EWP observations, including leap years, winter boundaries, weighted means, partial periods, zeros and gaps, and verify all four sunshine regions against their published and monthly totals. Browser checks cover all nine breakdown views, year and region controls, restored cumulative charts, other chart modes and mobile layouts.

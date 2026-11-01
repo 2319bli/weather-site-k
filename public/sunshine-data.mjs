@@ -122,3 +122,17 @@ export function sunshineHistory(data, kind, key, toDate = false) {
   for (const row of rows) row.rank = row.complete ? 1 + complete.filter(other => other.value > row.value).length : null;
   return { rows, period, months, latest, referenceYear, ranked: complete.length };
 }
+
+export function sunshineBreakdown(data, kind, year) {
+  if (!['months', 'seasons', 'hex'].includes(kind)) throw new Error('Choose months, seasons or hex seasons for an individual breakdown.');
+  const values = new Map(data.records.map(row => [row.month, row.value]));
+  return PERIODS[kind].map(period => {
+    const months = period.months.map(month => monthKey(year, month));
+    const observed = months.map(month => values.get(month)).filter(value => value !== undefined);
+    const complete = observed.length === months.length;
+    const published = complete && period.published ? data.published?.[year]?.[period.published] : undefined;
+    return { label: period.label, year, count: observed.length, expected: months.length, complete,
+      start: months[0], end: months.at(-1),
+      value: observed.length ? published ?? Math.round(observed.reduce((a,b) => a+b, 0) * 10) / 10 : null };
+  });
+}

@@ -1,4 +1,4 @@
-/* Shared daily/history views. Existing CET/EWP cumulative renderers remain in their pages. */
+/* Shared daily, historical and individual-period views. Existing CET/EWP cumulative renderers remain in their pages. */
 (function () {
     const A = window.CETAnalysis;
     const dateLabel = iso => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
@@ -22,6 +22,8 @@
             const buttons = [...document.querySelectorAll('[data-chart-mode]')];
             const dailyControls = document.getElementById('daily-controls');
             const historyControls = document.getElementById('history-controls');
+            const individualControls = document.getElementById('individual-controls');
+            const individualSelect = document.getElementById('individual-year');
             const historyNote = document.getElementById('history-range-note');
             const rangeButtons = [...document.querySelectorAll('[data-history-range]')];
             const recordSelect = document.getElementById('record-year');
@@ -30,6 +32,7 @@
             const forecastSummary = document.getElementById('forecast-summary');
             const mobile = window.matchMedia('(max-width: 760px)');
             let currentView = 'annual';
+            let individualYear = Number(archive.latest?.slice(0, 4));
 
             buttons.forEach(button => button.addEventListener('click', () => {
                 modes[currentView] = button.dataset.chartMode;
@@ -40,6 +43,7 @@
                 redraw();
             }));
             showRecords.addEventListener('change', redraw);
+            individualSelect?.addEventListener('change', () => { individualYear = Number(individualSelect.value); redraw(); });
             recordSelect.addEventListener('change', () => {
                 recordYears[currentView] = Number(recordSelect.value);
                 redraw();
@@ -61,7 +65,7 @@
                     legend: { orientation: 'h', x: 0, y: -0.2, yanchor: 'top', traceorder: 'normal',
                         entrywidthmode: 'fraction', entrywidth: mobile.matches ? 0.5 : 0.25,
                         font: { size: mobile.matches ? 10 : 11 } },
-                    hovermode: 'closest'
+                    hovermode: 'closest', barmode: 'overlay'
                 }, { responsive: true, displaylogo: false, toImageButtonOptions: {
                     filename: `${rainfall ? 'ewp' : 'cet'}-${currentView}-${modes[currentView]}`, width: 1400, height: 800, scale: 2
                 } });
@@ -185,13 +189,42 @@
                 extra.innerHTML = `<details><summary>All years · values and rankings</summary><p class="hint">${rainfall ? 'Observed rainfall only. Projections excluded.' : 'Observed daily CET only. Forecasts excluded.'} Rank 1 is ${highLabel.toLowerCase()}; ties share a rank.${toDate ? ' All years use the matching dates shown above; 29 February is excluded.' : ''}</p>${table(['Year', rainfall ? 'Total rainfall' : 'Mean CET', 'Observed days', rankLabel], rows.slice().reverse().map(row => [row.year, format(row.value), `${row.days}/${row.expected}${row.complete ? '' : row.first ? ` · incomplete<br>${dateLabel(row.first)} – ${dateLabel(row.last)}` : ' · no observations'}`, row.rank ?? '—']), rainfall ? 'Historical rainfall totals' : 'Historical CET means')}</details>`;
             }
 
+            function renderIndividual() {
+                const available = [...new Set(A.periods(currentView).flatMap(period => A.years(archive, period)))].sort((a,b) => b-a);
+                if (!available.includes(individualYear)) individualYear = available[0];
+                individualSelect.replaceChildren(...available.map(year => new Option(String(year), String(year), false, year === individualYear)));
+                const rows = A.breakdown(archive, currentView, individualYear, rainfall ? 'total' : 'mean');
+                const labels = { months: 'Monthly', seasons: 'Seasonal', 'hex-seasons': 'Hex-season' };
+                const detail = row => `${row.label} ${row.year}<br>${dateLabel(row.start)} – ${dateLabel(row.end)}<br>${row.days}/${row.expected} observed days${row.complete ? '' : row.days ? '<br>Incomplete period' : '<br>No observations'}`;
+                const trace = {
+                    x: rows.map(row => row.label), y: rows.map(row => row.value), name: String(individualYear),
+                    text: rows.map(detail), hovertemplate: `%{text}<br>${rainfall ? 'Total rainfall' : 'Mean CET'}: %{y:.2f}${unit}<extra></extra>`,
+                    ...(rainfall ? { type: 'bar', textposition: 'none', marker: { color: '#3985cb', pattern: { shape: rows.map(row => row.days && !row.complete ? '/' : '') } } }
+                        : { type: 'scatter', mode: 'lines+markers', connectgaps: false, line: { color: '#3985cb', width: 2 },
+                            marker: { size: 8, symbol: rows.map(row => row.complete ? 'circle' : 'diamond-open'), color: rows.map(row => row.complete ? '#3985cb' : '#d77831') } })
+                };
+                plot([trace], `${individualYear} · ${labels[currentView]} ${rainfall ? 'rainfall totals' : 'mean CET'}`, {
+                    type: 'category', categoryorder: 'array', categoryarray: rows.map(row => row.label), tickangle: 0,
+                    tickfont: { size: mobile.matches ? 9 : 12 }
+                }, rainfall ? 'Total rainfall (mm)' : 'Mean temperature (°C)');
+                summary.textContent = `${individualYear} · ${rows.filter(row => row.complete).length} of ${rows.length} periods complete. Observations only.${currentView === 'seasons' ? ' Winter includes the preceding December.' : ''}`;
+                if (rows.some(row => row.days && !row.complete)) summary.textContent += rainfall
+                    ? ' Hatched bars show incomplete totals.' : ' Hollow diamonds show means for incomplete periods.';
+                if (rows.some(row => !row.days)) summary.textContent += ' Periods without observations are left blank.';
+                extra.innerHTML = `<details><summary>${individualYear} · individual values</summary>${table(['Period', rainfall ? 'Total rainfall' : 'Mean CET', 'Observed days', 'Date range'], rows.map(row => [row.label, format(row.value), `${row.days}/${row.expected}${row.complete ? '' : row.days ? ' · incomplete' : ' · no observations'}`, `${dateLabel(row.start)} – ${dateLabel(row.end)}`]), `${individualYear} period breakdown`)}</details>`;
+            }
+
             return {
                 render(view, selection, years) {
                     currentView = view;
                     const mode = modes[view] || 'cumulative';
                     document.body.dataset[`${kind}Mode`] = mode;
-                    buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.chartMode === mode)));
+                    buttons.forEach(button => {
+                        button.setAttribute('aria-pressed', String(button.dataset.chartMode === mode));
+                        if (button.dataset.chartMode === 'individual') button.hidden = view === 'annual';
+                    });
                     dailyControls.hidden = mode !== 'daily';
+                    if (individualControls) individualControls.hidden = mode !== 'individual';
                     if (historyControls) historyControls.hidden = mode !== 'historical';
                     rangeButtons.forEach(button => {
                         button.setAttribute('aria-pressed', String(button.dataset.historyRange === (historyRanges[view] || 'full')));
@@ -200,6 +233,7 @@
                     extra.replaceChildren();
                     if (mode === 'cumulative') return false;
                     if (forecastSummary) forecastSummary.textContent = '';
+                    if (mode === 'individual') { renderIndividual(); return true; }
                     const period = A.period(view, selection);
                     if (mode === 'daily') renderDaily(period, years);
                     else renderHistory(period);

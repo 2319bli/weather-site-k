@@ -20,6 +20,25 @@
         return { label, months, winter: view === 'seasons' && selection === 'winter' };
     }
 
+    function periods(view) {
+        if (view === 'months') return MONTHS.map((_, index) => period(view, index + 1));
+        if (view === 'seasons') return Object.keys(SEASONS).map(selection => period(view, selection));
+        if (view === 'hex-seasons') return Object.keys(HEX).map(selection => period(view, selection));
+        throw new Error('Choose months, seasons or hex-seasons for an individual breakdown.');
+    }
+
+    function breakdown(archive, view, year, aggregation = 'mean') {
+        return periods(view).map(period => {
+            const rows = entries(archive, period, year), calendar = slots(period, year);
+            const total = rows.length ? rows.reduce((sum, row) => sum + row.value, 0) : null;
+            const mean = rows.length ? total / rows.length : null;
+            return { label: period.label, year, value: aggregation === 'total' ? total : mean, total, mean,
+                days: rows.length, expected: calendar.length, complete: rows.length === calendar.length,
+                start: calendar[0].iso, end: calendar.at(-1).iso,
+                first: rows[0]?.iso ?? null, last: rows.at(-1)?.iso ?? null };
+        });
+    }
+
     // A leap-year calendar aligns 1 March with 1 March in every daily trace.
     // Winter is labelled by its January/February year (December is year - 1).
     function slots(period, year = 2000) {
@@ -149,7 +168,7 @@
         return { ...window, rows: rankHistory(rows) };
     }
 
-    const api = { period, slots, createArchive, years, entries, daily, heldRecords, history, historyToDate };
+    const api = { period, periods, breakdown, slots, createArchive, years, entries, daily, heldRecords, history, historyToDate };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.WeatherAnalysis = root.CETAnalysis = api;
 })(typeof window !== 'undefined' ? window : globalThis);

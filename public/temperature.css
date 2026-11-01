@@ -28,3 +28,7 @@ body:is([data-temperature-mode="historical"], [data-rainfall-mode="historical"])
     .chart-mode-switch button { flex: 1; padding: 9px 6px; font-size: 11px; }
     :is(#temperature-details, #rainfall-details) details { padding: 12px; }
 }
+
+.chart-mode-switch button[hidden] { display: none; }
+body:is([data-temperature-mode="individual"], [data-rainfall-mode="individual"]) .control-panel { display: none; }
+body:is([data-temperature-mode="individual"], [data-rainfall-mode="individual"]) .layout { grid-template-columns: minmax(0, 1fr); }
