@@ -14,6 +14,14 @@ The overview selects the latest observed year by default and lets visitors choos
 
 Comparisons use matching calendar dates and a 1991–2020 reference average. Leap day is omitted from period comparisons; daily highlights retain it. Incomplete historical windows are excluded from rankings, and incomplete selected periods receive no rank or anomaly. January's last-30-day window includes the preceding December. Missing observations break dry runs. The monthly chart also has an expandable table of exact figures.
 
+## Temperature views
+
+Annual, monthly, seasonal and hex-seasonal charts each offer **Cumulative average**, **Daily CET** and **Historical comparison**, retaining the selected mode within each tab. Cumulative averages keep the original calculations and year controls. Daily CET uses those same selected years, with dotted forecasts shown separately.
+
+Daily records show the archive's warmest and coldest daily mean for each calendar date, a shaded range, and the record holders on hover. Select a record year to highlight its still-standing records and list their dates, temperatures and all tied holders. The selected record year is also drawn even when it is outside the year list. Switch off **Show daily records** for just the selected years. This feature follows the daily-record view in [WeatherArchives](https://pr-141.github.io/WeatherArchives/cet_mean_daily_extremes.html), using Weather Site K's live CET archive.
+
+Historical comparison plots the observed mean of the chosen period for every archive year, with a values/rankings table. Only complete periods are ranked; incomplete periods use hollow diamonds and show their observed coverage. Forecasts never enter the record range, record holders or historical means. Daily curves align by calendar date, with a gap on 29 February in non-leap years. Winter is labelled by its January/February year and includes the preceding December. Historical period means include leap day when present.
+
 ## Terminal
 
 Open **Terminal** from the public site and sign in with the admin password. The password is not in this repository or the browser code. Cloudflare stores a salted PBKDF2 verifier as the `ADMIN_PASSWORD_HASH` secret. Login attempts are rate limited; sessions use Secure, HttpOnly, SameSite cookies and expire after eight hours. Every admin API requires a valid session, and writes require a matching Origin. Changing the password invalidates existing sessions.
@@ -66,6 +74,8 @@ npm test
 ```
 
 Dashboard tests check independently calculated archive statistics, partial periods, ties, leap days, year boundaries and missing data. Tests compare every original HEI/FEI bar against the Python exports and cover annual replacements, leap days, rankings, every original CET/EWP archive row, date validation, password hashing, protected routes, CSRF checks, login limits, logout, shared saves, forecast updates, concurrent writes and observed/forecast reconciliation. Integration tests use an isolated local database and never change production weather data.
+
+Temperature tests cover calendar alignment, winter boundaries, tied and superseded daily records, forecast exclusion, complete and incomplete historical periods, duplicate observations and independently grouped archive values. Browser checks compare cumulative trace values before and after the new view controls and exercise every mode, record selection, period selectors and mobile layouts.
 
 ## Branding and colour schemes
 

@@ -251,6 +251,9 @@ body {
     <link rel="stylesheet" href="theme.css?v=design-1">
     <script src="appearance.js?v=design-1"></script>
     <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="temperature.css?v=views-1">
+    <script src="temperature-data.js?v=views-1"></script>
+    <script src="temperature-views.js?v=views-1"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -297,14 +300,25 @@ body {
         <button class="tab" data-tab="seasons">Seasons</button>
         <button class="tab" data-tab="hex-seasons">Hex Seasons</button>
     </div>
+    <div class="chart-mode-switch" role="group" aria-label="Temperature chart type">
+        <button type="button" data-chart-mode="cumulative" aria-pressed="true">Cumulative average</button>
+        <button type="button" data-chart-mode="daily" aria-pressed="false">Daily CET</button>
+        <button type="button" data-chart-mode="historical" aria-pressed="false">Historical comparison</button>
+    </div>
+    <div id="daily-controls" class="daily-controls" hidden>
+        <label><input id="show-daily-records" type="checkbox" checked> Show daily records</label>
+        <label for="record-year">Records held by <select id="record-year" aria-label="Record year"></select></label>
+    </div>
     <div class="layout">
         <div class="chart-area">
             <div id="forecast-summary" class="summary-box"></div>
             <div id="chart">Loading...</div>
             <div id="nov13-summary" class="summary-box"></div>
+            <div id="temperature-details" aria-live="polite"></div>
         </div>
         <aside class="control-panel">
             <div id="annual-controls" class="tab-content active">
+                <div class="year-controls">
                 <h2>Years in View</h2>
                 <p class="hint">Add up to 10 years. Click × to remove.</p>
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
@@ -345,6 +359,7 @@ body {
                 </form>
                 <small id="year-error" class="error"></small>
                 <ul id="year-list" class="year-list"></ul>
+                </div>
             </div>
             <div id="months-controls" class="tab-content">
                 <h2>Month Selection</h2>
@@ -365,6 +380,7 @@ body {
         <option value="12" selected>December</option>
         </select>
                 </div>
+                <div class="year-controls">
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
                 <div class="mode-selector" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <button type="button" class="mode-button" data-mode="mildest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
@@ -392,6 +408,7 @@ body {
                 </form>
                 <small id="year-error-monthly" class="error"></small>
                 <ul id="year-list-monthly" class="year-list"></ul>
+                </div>
             </div>
             <div id="seasons-controls" class="tab-content">
                 <h2>Season Selection</h2>
@@ -404,6 +421,7 @@ body {
         <option value="autumn">Autumn</option>
         </select>
                 </div>
+                <div class="year-controls">
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
                 <div class="mode-selector" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <button type="button" class="mode-button-season" data-mode="mildest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
@@ -431,6 +449,7 @@ body {
                 </form>
                 <small id="year-error-season" class="error"></small>
                 <ul id="year-list-season" class="year-list"></ul>
+                </div>
             </div>
             <div id="hex-seasons-controls" class="tab-content">
                 <h2>Hex-Season Selection</h2>
@@ -445,6 +464,7 @@ body {
         <option value="pha">Phaier</option>
         </select>
                 </div>
+                <div class="year-controls">
                 <h2 style="margin-top: 20px;">Year Selection Mode</h2>
                 <div class="mode-selector" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <button type="button" class="mode-button-hex-season" data-mode="mildest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
@@ -472,11 +492,13 @@ body {
                 </form>
                 <small id="year-error-hex-season" class="error"></small>
                 <ul id="year-list-hex-season" class="year-list"></ul>
+                </div>
             </div>
+            <p class="historical-help">All archive years are included. Values and rankings are in the table below the chart.</p>
         </aside>
     </div>
     <p class="caption">
-        Data source: <code>MeanTempCET.csv</code> (daily CET values). Forecast extensions for 2025 and 2026 are dotted.
+        Data source: <code>MeanTempCET.csv</code> (daily mean CET), loaded from the server. Forecast extensions are dotted.
     </p>
 
     <script>
@@ -710,6 +732,12 @@ body {
             const errorElHexSeason = document.getElementById("year-error-hex-season");
             const annualWarmestUpToControlsEl = document.getElementById("annual-warmest-up-to-controls");
             const annualUpToDateInputEl = document.getElementById("annual-up-to-date");
+            const alternateViews = CETViews.create(observedRows, forecast2026Rows, chartEl, summaryEl, COLOR_PALETTE, () => {
+                if (state.currentView === "annual") renderChart();
+                else if (state.currentView === "months") renderMonthlyChart();
+                else if (state.currentView === "seasons") renderSeasonChart();
+                else renderHexSeasonChart();
+            });
             
             // Tab switching
             document.querySelectorAll(".tab").forEach(tab => {
@@ -1008,6 +1036,7 @@ body {
                 if (!YEARS.length) {
                     YEARS = DEFAULT_YEARS.slice(0, MAX_YEARS).filter((year) => availableYears.has(year));
                 }
+                if (alternateViews.render("annual", null, YEARS)) return;
                 // Filter out 2026 from normal processing since it's forecast-only
                 const actualDataRows = state.rows.filter((row) => row.year !== 2026);
                 const parsed = actualDataRows.filter((row) => YEARS.includes(row.year));
@@ -1514,6 +1543,9 @@ body {
                     ? state.monthlyYears 
                     : defaultYears;
                 
+                renderMonthlyYearList();
+                if (alternateViews.render("months", month, yearsToShow)) return;
+
                 // Filter rows for the selected month
                 const monthRows = state.rows.filter(row => {
                     const date = new Date(row.date);
@@ -1911,6 +1943,8 @@ body {
                 const yearsToShow = state.seasonYears.length
                     ? state.seasonYears
                     : getYearsForSeason(season, state.seasonMode);
+                renderSeasonYearList();
+                if (alternateViews.render("seasons", season, yearsToShow)) return;
                 const traces = [];
 
                 yearsToShow.forEach((year, idx) => {
@@ -2011,6 +2045,8 @@ body {
                 const yearsToShow = state.hexSeasonYears.length
                     ? state.hexSeasonYears
                     : getYearsForHexSeason(season, state.hexSeasonMode);
+                renderHexSeasonYearList();
+                if (alternateViews.render("hex-seasons", season, yearsToShow)) return;
                 const traces = [];
 
                 yearsToShow.forEach((year, idx) => {
