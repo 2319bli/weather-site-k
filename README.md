@@ -30,7 +30,7 @@ The supplied CET and EWP observations run through **30 October 2026**. Forecasts
 
 GitHub Pages is a static host. The terminal's `save`, `savevis`, `conf cet`, `conf ewp`, and `upd` / `confirm` commands save to this browser's local storage. Reload chart pages to apply local data edits. Edits do not update the repository or other visitors, and clearing browser storage removes them. A storage error is reported if persistence is blocked.
 
-To update the public observations or forecasts, edit the corresponding CSV in `public/data/` and push to `main`. Keep `Date,Value` headers for observed datasets and no header for `forecast_2026.csv`. Use ISO dates and numeric values. Forecast dates on or before the latest CET observation are excluded automatically.
+To update the public observations or forecasts, edit the corresponding CSV in `public/data/` and push to `main`. Keep `Date,Value` headers for observed datasets and no header for `forecast_2026.csv`. Both `YYYY-MM-DD` and day-first `DD/MM/YYYY` dates are supported, including mixed formats in the historical CET archive. Values must be numeric. Forecast dates on or before the latest CET observation are excluded automatically.
 
 ## Checks and deployment
 
