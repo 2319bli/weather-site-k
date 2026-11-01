@@ -110,7 +110,7 @@ code { color: inherit; font-size: .95em; }
   .scheme-picker { display: block; }
   .scheme-picker > span { display: block; font-size: 8px; margin: 0 0 3px; }
   .theme-toggle { min-width: 108px; max-width: 120px; padding: 6px 7px !important; font-size: 11px !important; }
-  .site-nav { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; overflow: visible; }
+  .site-nav { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: visible; }
   .site-nav a { justify-content: center; min-height: 38px; }
   .site-nav a:last-child { margin-left: 0; }
   .site-nav a { font-size: 11px; }

@@ -7,7 +7,7 @@ const publicDir = path.join(__dirname, '../public');
 
 // Exercise the original loaders directly from the HTML, including the mixed
 // date formats in the real archive. No replacement data layer is involved.
-for (const [page, dataset] of [['index', 'MeanTempCET.csv'], ['threshold', 'MeanTempCET.csv'], ['ewp', 'PrecipitationEWP.csv']]) {
+for (const [page, dataset] of [['temperature', 'MeanTempCET.csv'], ['threshold', 'MeanTempCET.csv'], ['ewp', 'PrecipitationEWP.csv']]) {
   test(`${page}: original loader retains every observed date and value`, async () => {
     const html = readFileSync(path.join(publicDir, page + '.html'), 'utf8');
     const helpers = html.slice(html.indexOf('function dayOfYear('), html.indexOf('function latestDateForYear('));

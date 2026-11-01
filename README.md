@@ -4,9 +4,15 @@ Public site: https://2319bli.github.io/weather-site-k/
 
 Admin terminal: https://weather-site-k-admin.2319bli.workers.dev/terminal.html
 
-The public pages run on GitHub Pages. A Cloudflare Worker serves the password-protected terminal and live CSV data; Cloudflare D1 stores weather updates, three saved terminal sessions, visual presets and expiring login sessions. All five chart pages read server data when loaded or refreshed. The heat and freeze indices use their separate annual hottest/coldest records, including location, rather than daily mean CET.
+The public pages run on GitHub Pages. A Cloudflare Worker serves the password-protected terminal and live CSV data; Cloudflare D1 stores weather updates, three saved terminal sessions, visual presets and expiring login sessions. The homepage overview and all five chart pages read server data when loaded or refreshed. The original temperature charts are at `temperature.html`; `index.html` is the overview. The heat and freeze indices use their separate annual hottest/coldest records, including location, rather than daily mean CET.
 
 The existing chart calculations and mixed ISO/day-first date parsers are preserved. The historical CSV files in `public/data/` are an unchanged baseline. The Worker appends confirmed observations to that baseline when serving data, overlays forecast updates, and removes forecasts at or before the latest confirmed CET date. New observations must start one day after the latest observation. Annual extreme records are seeded from the unchanged `hottest_days.csv` and `coldest_days.csv` files; D1 stores replacements by year. Their charts, hover details, top-ten tables and year ranges are calculated from those shared records, using the original HEI = Σ(temperature − 27°C) and FEI = Σ(−temperature − 8°C) formulas. Concurrent weather edits are rejected rather than overwritten.
+
+## Homepage overview
+
+The overview selects the latest observed year by default and lets visitors choose another year or refresh the server data. It shows year-to-date CET and rainfall, their archive rankings, monthly comparisons, the last 30 days, daily highs/lows, the longest run with EWP below 1 mm, and the annual hottest/coldest records. It shows each series' actual observation cut-off and excludes forecasts.
+
+Comparisons use matching calendar dates and a 1991–2020 reference average. Leap day is omitted from period comparisons; daily highlights retain it. Incomplete historical windows are excluded from rankings, and incomplete selected periods receive no rank or anomaly. January's last-30-day window includes the preceding December. Missing observations break dry runs. The monthly chart also has an expandable table of exact figures.
 
 ## Terminal
 
@@ -59,7 +65,7 @@ python3 scripts/check-site.py
 npm test
 ```
 
-Tests compare every original HEI/FEI bar against the Python exports and cover annual replacements, leap days, rankings, every original CET/EWP archive row, date validation, password hashing, protected routes, CSRF checks, login limits, logout, shared saves, forecast updates, concurrent writes and observed/forecast reconciliation. Integration tests use an isolated local database and never change production weather data.
+Dashboard tests check independently calculated archive statistics, partial periods, ties, leap days, year boundaries and missing data. Tests compare every original HEI/FEI bar against the Python exports and cover annual replacements, leap days, rankings, every original CET/EWP archive row, date validation, password hashing, protected routes, CSRF checks, login limits, logout, shared saves, forecast updates, concurrent writes and observed/forecast reconciliation. Integration tests use an isolated local database and never change production weather data.
 
 ## Branding and colour schemes
 

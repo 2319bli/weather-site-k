@@ -176,7 +176,7 @@ async function route(request, env) {
     }
     return json({ error: 'Unknown API endpoint or method.' }, 404);
   }
-  if (request.method === 'GET' && ['/index.html', '/ewp.html', '/threshold.html', '/hei.html', '/fei.html'].includes(path)) return redirect(new URL(path.slice(1), env.PUBLIC_SITE_URL).href);
+  if (request.method === 'GET' && ['/index.html', '/temperature.html', '/ewp.html', '/threshold.html', '/hei.html', '/fei.html'].includes(path)) return redirect(new URL(path.slice(1), env.PUBLIC_SITE_URL).href);
   if (['GET', 'HEAD'].includes(request.method) && ['/site.css', '/theme.css', '/appearance.js', '/logo.svg'].includes(path)) return env.ASSETS.fetch(request);
   return response('Not found', 404);
 }
