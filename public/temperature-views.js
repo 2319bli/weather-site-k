@@ -23,7 +23,7 @@
             const dailyControls = document.getElementById('daily-controls');
             const historyControls = document.getElementById('history-controls');
             const individualControls = document.getElementById('individual-controls');
-            const individualSelect = document.getElementById('individual-year');
+            const individualPicker = window.IndividualComparison?.createYearPicker(individualControls, 'individual', redraw);
             const historyNote = document.getElementById('history-range-note');
             const rangeButtons = [...document.querySelectorAll('[data-history-range]')];
             const recordSelect = document.getElementById('record-year');
@@ -32,7 +32,6 @@
             const forecastSummary = document.getElementById('forecast-summary');
             const mobile = window.matchMedia('(max-width: 760px)');
             let currentView = 'annual';
-            let individualYear = Number(archive.latest?.slice(0, 4));
 
             buttons.forEach(button => button.addEventListener('click', () => {
                 modes[currentView] = button.dataset.chartMode;
@@ -43,7 +42,6 @@
                 redraw();
             }));
             showRecords.addEventListener('change', redraw);
-            individualSelect?.addEventListener('change', () => { individualYear = Number(individualSelect.value); redraw(); });
             recordSelect.addEventListener('change', () => {
                 recordYears[currentView] = Number(recordSelect.value);
                 redraw();
@@ -61,11 +59,12 @@
                 Plotly.newPlot(chart, traces, {
                     title: { text: title, font: { size: 18 } },
                     xaxis, yaxis: { title: ylabel, zeroline: false, ...(rainfall ? { rangemode: 'tozero' } : {}) },
-                    margin: { l: 58, r: 20, t: 65, b: 130 },
+                    margin: { l: 58, r: 20, t: 65, b: modes[currentView] === 'individual' ? Math.max(130, 80 + Math.ceil(traces.length / (mobile.matches ? 2 : 4)) * 22) : 130 },
                     legend: { orientation: 'h', x: 0, y: -0.2, yanchor: 'top', traceorder: 'normal',
                         entrywidthmode: 'fraction', entrywidth: mobile.matches ? 0.5 : 0.25,
                         font: { size: mobile.matches ? 10 : 11 } },
-                    hovermode: 'closest', barmode: 'overlay'
+                    hovermode: 'closest', barmode: modes[currentView] === 'individual' ? 'group' : 'overlay',
+                    ...(modes[currentView] === 'individual' ? { showlegend: true } : {})
                 }, { responsive: true, displaylogo: false, toImageButtonOptions: {
                     filename: `${rainfall ? 'ewp' : 'cet'}-${currentView}-${modes[currentView]}`, width: 1400, height: 800, scale: 2
                 } });
@@ -190,28 +189,24 @@
             }
 
             function renderIndividual() {
+                if (!individualPicker) { summary.textContent = 'Refresh the page to load the year comparison controls.'; return; }
                 const available = [...new Set(A.periods(currentView).flatMap(period => A.years(archive, period)))].sort((a,b) => b-a);
-                if (!available.includes(individualYear)) individualYear = available[0];
-                individualSelect.replaceChildren(...available.map(year => new Option(String(year), String(year), false, year === individualYear)));
-                const rows = A.breakdown(archive, currentView, individualYear, rainfall ? 'total' : 'mean');
+                const years = individualPicker.update(available, Number(archive.latest?.slice(0, 4)));
+                const series = years.map(year => ({ year, colour: individualPicker.colour(year), rows: A.breakdown(archive, currentView, year, rainfall ? 'total' : 'mean') }));
+                const rows = series.flatMap(series => series.rows);
+                const categories = series[0].rows.map(row => row.label);
                 const labels = { months: 'Monthly', seasons: 'Seasonal', 'hex-seasons': 'Hex-season' };
-                const detail = row => `${row.label} ${row.year}<br>${dateLabel(row.start)} – ${dateLabel(row.end)}<br>${row.days}/${row.expected} observed days${row.complete ? '' : row.days ? '<br>Incomplete period' : '<br>No observations'}`;
-                const trace = {
-                    x: rows.map(row => row.label), y: rows.map(row => row.value), name: String(individualYear),
-                    text: rows.map(detail), hovertemplate: `%{text}<br>${rainfall ? 'Total rainfall' : 'Mean CET'}: %{y:.2f}${unit}<extra></extra>`,
-                    ...(rainfall ? { type: 'bar', textposition: 'none', marker: { color: '#3985cb', pattern: { shape: rows.map(row => row.days && !row.complete ? '/' : '') } } }
-                        : { type: 'scatter', mode: 'lines+markers', connectgaps: false, line: { color: '#3985cb', width: 2 },
-                            marker: { size: 8, symbol: rows.map(row => row.complete ? 'circle' : 'diamond-open'), color: rows.map(row => row.complete ? '#3985cb' : '#d77831') } })
-                };
-                plot([trace], `${individualYear} · ${labels[currentView]} ${rainfall ? 'rainfall totals' : 'mean CET'}`, {
-                    type: 'category', categoryorder: 'array', categoryarray: rows.map(row => row.label), tickangle: 0,
+                const traces = window.IndividualComparison.traces(series, kind, categories, dateLabel);
+                plot(traces, `${labels[currentView]} ${rainfall ? 'rainfall totals' : 'mean CET'} · ${years.length === 1 ? years[0] : `${years.length} years`}`, {
+                    type: 'category', categoryorder: 'array', categoryarray: categories, tickangle: 0,
                     tickfont: { size: mobile.matches ? 9 : 12 }
                 }, rainfall ? 'Total rainfall (mm)' : 'Mean temperature (°C)');
-                summary.textContent = `${individualYear} · ${rows.filter(row => row.complete).length} of ${rows.length} periods complete. Observations only.${currentView === 'seasons' ? ' Winter includes the preceding December.' : ''}`;
+                summary.textContent = `${series.map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}. Observations only.${currentView === 'seasons' ? ' Winter includes the preceding December.' : ''}`;
                 if (rows.some(row => row.days && !row.complete)) summary.textContent += rainfall
                     ? ' Hatched bars show incomplete totals.' : ' Hollow diamonds show means for incomplete periods.';
                 if (rows.some(row => !row.days)) summary.textContent += ' Periods without observations are left blank.';
-                extra.innerHTML = `<details><summary>${individualYear} · individual values</summary>${table(['Period', rainfall ? 'Total rainfall' : 'Mean CET', 'Observed days', 'Date range'], rows.map(row => [row.label, format(row.value), `${row.days}/${row.expected}${row.complete ? '' : row.days ? ' · incomplete' : ' · no observations'}`, `${dateLabel(row.start)} – ${dateLabel(row.end)}`]), `${individualYear} period breakdown`)}</details>`;
+                const tableRows = categories.flatMap((_,i) => series.map(({rows}) => rows[i]));
+                extra.innerHTML = `<details><summary>Individual values · ${years.join(', ')}</summary>${table(['Period', 'Year', rainfall ? 'Total rainfall' : 'Mean CET', 'Observed days', 'Date range'], tableRows.map(row => [row.label, row.year, format(row.value), `${row.days}/${row.expected}${row.complete ? '' : row.days ? ' · incomplete' : ' · no observations'}`, `${dateLabel(row.start)} – ${dateLabel(row.end)}`]), 'Selected years period breakdown')}</details>`;
             }
 
             return {

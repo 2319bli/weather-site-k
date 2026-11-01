@@ -251,9 +251,10 @@ body {
     <link rel="stylesheet" href="theme.css?v=design-1">
     <script src="appearance.js?v=design-1"></script>
     <link rel="icon" href="logo.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="temperature.css?v=views-4">
+    <link rel="stylesheet" href="temperature.css?v=views-5">
     <script src="temperature-data.js?v=views-4"></script>
-    <script src="temperature-views.js?v=views-4"></script>
+    <script src="individual-comparison.js?v=1"></script>
+    <script src="temperature-views.js?v=views-5"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -307,7 +308,7 @@ body {
         <button type="button" data-chart-mode="historical" aria-pressed="false">Historical comparison</button>
         <button type="button" data-chart-mode="individual" aria-pressed="false" hidden>Individual totals</button>
     </div>
-    <div id="individual-controls" class="daily-controls" hidden><label for="individual-year">Year <select id="individual-year"></select></label></div>
+    <div id="individual-controls" class="individual-controls" hidden></div>
     <div id="history-controls" class="history-controls" hidden>
         <div class="chart-mode-switch history-range-switch" role="group" aria-label="Historical comparison range">
             <button type="button" data-history-range="full" aria-pressed="true">Full period</button>

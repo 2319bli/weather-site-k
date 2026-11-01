@@ -1,7 +1,9 @@
 import { SUNSHINE, PERIODS, MONTHS, sunshineHistory, sunshineBreakdown } from './sunshine-data.mjs?v=2';
 
 const $ = id => document.getElementById(id);
-const state = { data: null, kind: 'annual', selected: { annual: 'ann', months: '1', seasons: 'win', hex: 'win' }, windows: {}, modes: {}, year: null, request: 0 };
+const state = { data: null, kind: 'annual', selected: { annual: 'ann', months: '1', seasons: 'win', hex: 'win' }, windows: {}, modes: {}, request: 0 };
+const individualPicker = window.IndividualComparison.createYearPicker($('sunshine-year-control'), 'sunshine', safeRender);
+const mobile = window.matchMedia('(max-width: 650px)');
 const hours = value => `${value.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`;
 const monthName = value => `${MONTHS[Number(value.slice(5)) - 1]} ${value.slice(0,4)}`;
 
@@ -91,16 +93,17 @@ async function renderIndividual() {
   const latest = data.records.at(-1).month;
   if (state.kind === 'seasons' && latest.endsWith('-12')) available.push(Number(latest.slice(0,4)) + 1);
   available.sort((a,b) => b-a);
-  if (!available.includes(state.year)) state.year = Number(latest.slice(0,4));
-  $('sunshine-year').replaceChildren(...available.map(year => new Option(String(year), String(year), false, year === state.year)));
-  const rows = sunshineBreakdown(data, state.kind, state.year);
-  const labels = rows.map(row => state.kind === 'months' ? row.label.slice(0,3) : row.label.split(' (')[0]);
+  const years = individualPicker.update(available, Number(latest.slice(0,4)));
+  const series = years.map(year => ({year, colour: individualPicker.colour(year), rows: sunshineBreakdown(data, state.kind, year)}));
+  const rows = series.flatMap(series => series.rows);
+  const labels = series[0].rows.map(row => state.kind === 'months' ? row.label.slice(0,3) : row.label.split(' (')[0]);
   const kindLabel = { months: 'Monthly', seasons: 'Seasonal', hex: 'Hex-season' }[state.kind];
-  $('comparison-window').textContent = `${data.label} · ${state.year} · ${kindLabel} totals. ${rows.filter(row => row.complete).length}/${rows.length} periods complete.${state.kind === 'seasons' ? ' Winter includes the preceding December.' : ''}${rows.some(row => row.count && !row.complete) ? ' Hatched bars show incomplete totals.' : ''}${rows.some(row => !row.count) ? ' Periods without observations are left blank.' : ''}`;
-  $('sunshine-individual-caption').textContent = `${data.label} · ${state.year} · ${kindLabel} sunshine totals`;
-  $('sunshine-individual-rows').replaceChildren(...rows.map(row => {
+  $('comparison-window').textContent = `${data.label} · ${kindLabel} totals. ${series.map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}.${state.kind === 'seasons' ? ' Winter includes the preceding December.' : ''}${rows.some(row => row.count && !row.complete) ? ' Hatched bars show incomplete totals.' : ''}${rows.some(row => !row.count) ? ' Periods without observations are left blank.' : ''}`;
+  $('sunshine-individual-caption').textContent = `${data.label} · ${years.join(', ')} · ${kindLabel} sunshine totals`;
+  const tableRows = labels.flatMap((_,i) => series.map(({rows}) => rows[i]));
+  $('sunshine-individual-rows').replaceChildren(...tableRows.map(row => {
     const tr = document.createElement('tr');
-    for (const text of [row.label, row.value === null ? '—' : row.value.toFixed(1), `${row.count}/${row.expected} months${row.complete ? '' : row.count ? ' · incomplete' : ' · no observations'}`]) {
+    for (const text of [row.label, row.year, row.value === null ? '—' : row.value.toFixed(1), `${row.count}/${row.expected} months${row.complete ? '' : row.count ? ' · incomplete' : ' · no observations'}`]) {
       const td = document.createElement('td'); td.textContent = text; tr.append(td);
     }
     return tr;
@@ -108,15 +111,11 @@ async function renderIndividual() {
   $('sunshine-chart').hidden = false;
   const style = getComputedStyle(document.documentElement), color = name => style.getPropertyValue(name).trim();
   if (!window.Plotly) throw new Error('The chart library could not load. Refresh to try again.');
-  await Plotly.react($('sunshine-chart'), [{
-    x: labels, y: rows.map(row => row.value), type: 'bar', textposition: 'none', name: String(state.year),
-    marker: { color: color('--nav-active-line'), pattern: { shape: rows.map(row => row.count && !row.complete ? '/' : '') } },
-    text: rows.map(row => `${row.label} ${row.year}<br>${monthName(row.start)} – ${monthName(row.end)}<br>${row.count}/${row.expected} months${row.complete ? '' : '<br>Incomplete period'}`),
-    hovertemplate: '%{text}<br>%{y:.1f} hours<extra></extra>'
-  }], {
+  await Plotly.react($('sunshine-chart'), window.IndividualComparison.traces(series, 'sunshine', labels, monthName), {
     autosize: true, paper_bgcolor: color('--panel-bg'), plot_bgcolor: color('--panel-bg'),
     font: { family: '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif', size: 12, color: color('--text-body') },
-    margin: { l: 65, r: 20, t: 25, b: 75 }, hovermode: 'closest', showlegend: false,
+    margin: { l: 65, r: 20, t: 25, b: Math.max(115, 85 + Math.ceil(series.length / (mobile.matches ? 2 : 4)) * 22) }, hovermode: 'closest', showlegend: true, barmode: 'group',
+    legend: { orientation: 'h', x: 0, y: -0.15, yanchor: 'top', entrywidthmode: 'fraction', entrywidth: mobile.matches ? 0.5 : 0.25, font: {size: 11} },
     xaxis: { type: 'category', categoryorder: 'array', categoryarray: labels, tickangle: 0, tickfont: { size: 10 }, gridcolor: color('--panel-border') },
     yaxis: { title: 'Sunshine (hours)', rangemode: 'tozero', gridcolor: color('--panel-border'), zeroline: false }
   }, { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['select2d','lasso2d'] });
@@ -159,7 +158,7 @@ async function load() {
 }
 document.querySelectorAll('[data-period]').forEach(button => button.addEventListener('click', () => { state.kind = button.dataset.period; updatePeriodControls(); safeRender(); }));
 document.querySelectorAll('[data-sunshine-view]').forEach(button => button.addEventListener('click', () => { state.modes[state.kind] = button.dataset.sunshineView; safeRender(); }));
-$('sunshine-year').addEventListener('change', () => { state.year = Number($('sunshine-year').value); safeRender(); });
+mobile.addEventListener('change', safeRender);
 $('sunshine-period').addEventListener('change', () => { state.selected[state.kind] = $('sunshine-period').value; safeRender(); });
 $('sunshine-window').addEventListener('change', () => { state.windows[state.kind] = $('sunshine-window').value; safeRender(); });
 $('sunshine-sort').addEventListener('change', safeRender);

@@ -32,9 +32,9 @@ Both pages share calendar and view helpers (retaining their original `temperatur
 
 ### Individual totals
 
-On temperature, rainfall and sunshine, the Months, Seasons and Hex seasons tabs also offer **Individual totals** with a single year selector. Months shows all 12 months, Seasons all four seasons, and Hex seasons all six two-month periods. The selected year is retained when changing breakdown types. Sunshine retains its regional dataset dropdown.
+On temperature, rainfall and sunshine, the Months, Seasons and Hex seasons tabs also offer **Individual totals** with an Add year dropdown and removable year labels, supporting up to ten years. Months shows all 12 months, Seasons all four seasons, and Hex seasons all six two-month periods. Selected years and their colours are retained when changing breakdown types. The last remaining year cannot be removed; add a replacement first. Sunshine retains its regional dataset dropdown.
 
-Rainfall and sunshine use bar charts of each period’s separate total. Temperature uses a line chart of each period’s mean CET, weighted by observed days rather than an average of monthly means. Forecasts and projections are excluded. Winter includes the preceding December and is labelled by its January/February year; leap days are included. Sunshine preserves published seasonal totals when available. Hatched bars or hollow temperature markers identify incomplete periods, while missing periods stay blank rather than becoming zero. An expandable table gives values and coverage. Existing cumulative, daily and historical modes remain available.
+Rainfall and sunshine use grouped bars for each period’s separate total, with one bar per selected year. Temperature uses a separate line for each year’s period mean CET, weighted by observed days rather than an average of monthly means. Forecasts and projections are excluded. Winter includes the preceding December and is labelled by its January/February year; leap days are included. Sunshine preserves published seasonal totals when available. Hatched bars or hollow temperature markers identify incomplete periods, while missing periods stay blank rather than becoming zero. An expandable table gives each year’s values and coverage, grouped by period. Existing cumulative, daily and historical modes remain available.
 
 ### Historical comparison to date
 
@@ -120,3 +120,5 @@ The K mark in `public/logo.svg` is the site logo and favicon. Colour schemes are
 Sunshine tests verify every imported monthly cell and published aggregate, period totals, fixed-width missing columns, ties, incomplete periods, matching-month comparisons, winter rollover, strict monthly command syntax, region isolation, authentication, CSRF and concurrent updates. Terminal-handler integration tests use an isolated database.
 
 Individual-breakdown tests compare all three period types with independently grouped CET/EWP observations, including leap years, winter boundaries, weighted means, partial periods, zeros and gaps, and verify all four sunshine regions against their published and monthly totals. Browser checks cover all nine breakdown views, year and region controls, restored cumulative charts, other chart modes and mobile layouts.
+
+Multi-year comparison tests cover selection limits, duplicate prevention, removing years, stable colours, grouped-bar offsets, missing periods, independent temperature lines and incomplete-period markers. Browser checks exercise adding/removing years, period and sunshine region changes, legends, tables and mobile layout.

@@ -32,3 +32,14 @@ body:is([data-temperature-mode="historical"], [data-rainfall-mode="historical"])
 .chart-mode-switch button[hidden] { display: none; }
 body:is([data-temperature-mode="individual"], [data-rainfall-mode="individual"]) .control-panel { display: none; }
 body:is([data-temperature-mode="individual"], [data-rainfall-mode="individual"]) .layout { grid-template-columns: minmax(0, 1fr); }
+.individual-controls { margin-bottom: 18px; font-size: 12px; }
+.individual-controls[hidden] { display: none; }
+.individual-controls form, .individual-controls label, .individual-years, .individual-years li { display: flex; align-items: center; gap: 8px; }
+.individual-controls form { flex-wrap: wrap; gap: 10px; }
+.individual-controls select, .individual-controls button { padding: 7px 11px; border: 1px solid var(--panel-border); border-radius: 4px; background: var(--panel-bg); color: var(--heading); }
+.individual-controls button:disabled, .individual-controls select:disabled { opacity: .45; cursor: default; }
+.individual-controls .hint { margin: 0; }
+.individual-years { flex-wrap: wrap; list-style: none; padding: 0; margin: 12px 0 0; }
+.individual-years li { padding: 4px 7px 4px 10px; border: 1px solid var(--panel-border); border-radius: 5px; background: var(--panel-bg); color: var(--heading); font-weight: 600; }
+.individual-years .year-swatch { width: 10px; height: 10px; border-radius: 50%; }
+.individual-years button { border: 0; background: transparent; padding: 0 4px; font-size: 18px; line-height: 1.3; }
