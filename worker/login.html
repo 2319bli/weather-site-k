@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin sign in | Weather Site K</title>
+<link rel="stylesheet" href="site.css"><link rel="stylesheet" href="theme.css">
+<link rel="icon" href="logo.svg" type="image/svg+xml"><script src="appearance.js"></script>
+<style>main{max-width:420px;margin:48px auto;padding:28px;background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:14px}label,input,button{display:block}input{box-sizing:border-box;width:100%;margin:10px 0 20px;padding:12px;font:inherit;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--text-body)}button{padding:10px 18px;font:inherit;cursor:pointer}#error{min-height:1.5em}</style></head><body>
+<header class="site-header">
+    <div class="masthead">
+        <a class="site-brand" href="index.html" aria-label="Weather Site K home">
+            <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><use href="logo.svg#mark"></use></svg>
+            <span class="brand-copy">Weather Site K</span>
+        </a>
+        <label class="scheme-picker" for="theme-toggle">
+            <span>Colour scheme</span>
+            <select id="theme-toggle" class="theme-toggle">
+              <option value="kimi-1">Daybreak</option>
+              <option value="kimi-2">Midnight</option>
+              <option value="kimi-3">Terracotta</option>
+              <option value="codex-1">Aurora</option>
+              <option value="codex-2">Atlantic</option>
+              <option value="codex-3">Eclipse</option>
+              <option value="claude-1">Amethyst</option>
+              <option value="claude-2">Meadow</option>
+              <option value="claude-3">Ember</option>
+            </select>
+        </label>
+    </div>
+    <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html">Temperature</a>
+        <a href="ewp.html">Rainfall</a>
+        <a href="threshold.html">Thresholds</a>
+        <a href="hei.html">Heat index</a>
+        <a href="fei.html">Freeze index</a>
+        <a href="terminal.html" aria-current="page">Terminal</a>
+    </nav>
+</header>
+<main id="main-content"><h1>Admin sign in</h1><form id="login-form">
+<label for="password">Password</label><input id="password" type="password" required autocomplete="current-password" maxlength="256" autofocus>
+<button type="submit">Sign in</button><p id="error" role="alert"></p></form></main>
+<script>
+document.getElementById('login-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = event.target.querySelector('button');
+  const error = document.getElementById('error');
+  button.disabled = true; error.textContent = '';
+  try {
+    const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: document.getElementById('password').value }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Sign in failed.');
+    document.getElementById('password').value = '';
+    location.replace('/terminal.html');
+  } catch (failure) { error.textContent = failure.message; button.disabled = false; }
+});
+</script></body></html>

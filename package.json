@@ -1,0 +1,11 @@
+{
+  "name": "weather-site-k",
+  "private": true,
+  "scripts": {
+    "prepare:worker": "node scripts/prepare-worker.cjs",
+    "dev:worker": "npm run prepare:worker && wrangler dev",
+    "deploy:worker": "npm run prepare:worker && wrangler deploy",
+    "test": "node --test tests/*.test.cjs"
+  },
+  "devDependencies": { "wrangler": "4.156.0" }
+}

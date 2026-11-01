@@ -1,0 +1,12 @@
+{
+  "name": "weather-site-k-admin",
+  "main": "worker/index.mjs",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "assets": { "directory": ".worker-assets", "binding": "ASSETS", "run_worker_first": true },
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  "d1_databases": [{ "binding": "DB", "database_name": "weather-site-k", "database_id": "ea9f4164-85d1-410c-aa54-ed437d3ee086" }],
+  "vars": { "PUBLIC_SITE_URL": "https://2319bli.github.io/weather-site-k/" },
+  "observability": { "enabled": true }
+}

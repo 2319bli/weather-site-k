@@ -21,7 +21,7 @@ class Page(HTMLParser):
             if not value or value.startswith(('#', 'https://', 'http://', 'data:')):
                 continue
             assert not value.startswith('/'), f'Root-relative URL breaks project Pages: {value}'
-            target = (self.path.parent / unquote(urlsplit(value).path)).resolve()
+            target = (ROOT / unquote(urlsplit(value).path)).resolve()
             assert target.is_relative_to(ROOT), f'URL escapes published site: {value}'
             assert target.is_file(), f'Missing asset: {self.path.name}: {value}'
         if tag == 'script':
@@ -36,7 +36,7 @@ class Page(HTMLParser):
             self.inline_script = False
 
 with tempfile.TemporaryDirectory() as directory:
-    for page in ROOT.glob('*.html'):
+    for page in [*ROOT.glob('*.html'), *(ROOT.parent / 'worker').glob('*.html')]:
         html = page.read_text()
         assert '../orig/' not in html, f'Unpublished data path: {page}'
         parser = Page(page)
