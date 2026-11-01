@@ -1,6 +1,6 @@
-# Weather site K
+# Weather Site K
 
-Weather site K is the original six-page weather site, published at **https://2319bli.github.io/weather-site-k/**.
+Weather Site K is the original six-page weather site, published at **https://2319bli.github.io/weather-site-k/**.
 
 The original chart calculations, data loaders and terminal behaviour are retained. The shared interface has been redesigned with a clearer archive layout, responsive navigation, accessible controls and nine named colour schemes. The original source folder and unrelated local files remain untouched.
 
@@ -11,6 +11,10 @@ The original chart calculations, data loaders and terminal behaviour are retaine
 - The deployment workflow validates and uploads only `public/` on pushes to `main`.
 
 The original loaders handle both ISO and day-first CSV dates. Plotly uses the original pinned CDN versions. The visual redesign does not add a data-processing layer.
+
+## Branding
+
+The K mark in `public/logo.svg` is the shared site logo and SVG favicon. Page headings and functional help remain; decorative taglines and introductory copy are omitted.
 
 ## Colour schemes
 

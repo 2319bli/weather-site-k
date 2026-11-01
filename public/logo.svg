@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <title>Weather Site K</title>
+  <style>
+    :root { color: #0b1f3a; --logo-accent: #1769ff; --logo-background: #f8fbff; }
+    @media (prefers-color-scheme: dark) {
+      :root { color: #f8fafc; --logo-accent: #06b6d4; --logo-background: #0f172a; }
+    }
+  </style>
+  <defs>
+    <g id="mark">
+      <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="23" y="35" text-anchor="middle" fill="currentColor" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-style="italic">K</text>
+      <circle cx="43" cy="6" r="4.3" fill="var(--logo-accent, #1769ff)" stroke="var(--logo-background, #f8fbff)" stroke-width="3"/>
+    </g>
+  </defs>
+  <use href="#mark"/>
+</svg>
