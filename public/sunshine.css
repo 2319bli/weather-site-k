@@ -6,8 +6,7 @@
 .sunshine-controls label { display: flex; flex-direction: column; align-items: stretch; gap: 8px; font-size: 12px; font-weight: 600; }
 .sunshine-details label { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
 .sunshine-toolbar select, .sunshine-controls select, .sunshine-details select, #sunshine-refresh { padding: 9px 12px; border: 1px solid var(--panel-border); border-radius: 5px; background: var(--panel-bg); color: var(--heading); }
-.sunshine-panel .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; margin: 0 0 16px; }
-.sunshine-panel .tab { padding: 8px 6px !important; }
+.sunshine-toolbar { margin-bottom: 20px; }
 .sunshine-panel .chart-mode-switch { flex-direction: column; margin-bottom: 16px; }
 .sunshine-panel .chart-mode-switch button { width: 100%; }
 .sunshine-panel .individual-controls { margin: 0; }

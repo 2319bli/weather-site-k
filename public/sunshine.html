@@ -4,7 +4,7 @@
 <title>Sunshine | Weather Site K</title>
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="site.css?v=overview-1"><link rel="stylesheet" href="theme.css?v=design-1">
-<link rel="stylesheet" href="temperature.css?v=views-6"><link rel="stylesheet" href="sunshine.css?v=3"><script src="appearance.js?v=indices-1"></script>
+<link rel="stylesheet" href="temperature.css?v=views-6"><link rel="stylesheet" href="sunshine.css?v=4"><script src="appearance.js?v=indices-1"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="individual-comparison.js?v=2"></script>
 <script type="module" src="sunshine.mjs?v=6"></script>
@@ -44,6 +44,12 @@
 </header>
 <main id="main-content" tabindex="-1">
 <section class="page-heading"><h1>Sunshine</h1><span class="dataset-tag">Monthly totals · hours</span></section>
+<div class="tabs" aria-label="Comparison period">
+  <button class="tab active" type="button" data-period="annual" aria-pressed="true">Annual</button>
+  <button class="tab" type="button" data-period="months" aria-pressed="false">Months</button>
+  <button class="tab" type="button" data-period="seasons" aria-pressed="false">Seasons</button>
+  <button class="tab" type="button" data-period="hex" aria-pressed="false">Hex seasons</button>
+</div>
 <div class="layout sunshine-layout">
   <aside class="control-panel sunshine-panel" aria-label="Sunshine chart controls">
     <div class="sunshine-toolbar">
@@ -51,13 +57,6 @@
       <select id="sunshine-dataset"><option value="sunuk">UK wide</option><option value="suneng">England</option><option value="suneaw">England and Wales</option><option value="sunmid">Midlands</option></select>
       <button id="sunshine-refresh" type="button">Refresh data</button>
       <span id="sunshine-coverage"></span>
-    </div>
-    <h2>Period</h2>
-    <div class="tabs" aria-label="Comparison period">
-      <button class="tab active" type="button" data-period="annual" aria-pressed="true">Annual</button>
-      <button class="tab" type="button" data-period="months" aria-pressed="false">Months</button>
-      <button class="tab" type="button" data-period="seasons" aria-pressed="false">Seasons</button>
-      <button class="tab" type="button" data-period="hex" aria-pressed="false">Hex seasons</button>
     </div>
     <div id="sunshine-view-controls" hidden>
       <h2>Chart view</h2>
