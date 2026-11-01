@@ -1,8 +1,8 @@
-# Weather site
+# Weather site K
 
-The original six-page weather site, published at **https://2319bli.github.io/weather-site-k/**.
+Weather site K is the original six-page weather site, published at **https://2319bli.github.io/weather-site-k/**.
 
-The HTML, inline chart code, theme choices, default appearance and styles are restored from the original `site/` folder. The original source folder and unrelated local files remain untouched.
+The HTML, inline chart code, theme choices, default appearance and styles are restored from the original `site/` folder, with the branding updated to **Weather site K**. The original source folder and unrelated local files remain untouched.
 
 ## GitHub Pages adaptations
 

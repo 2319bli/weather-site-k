@@ -57,7 +57,7 @@ h1 {
 }
 
 .site-nav::before {
-  content: "Weather" !important;
+  content: "Weather site K" !important;
   flex: 0 0 auto;
   margin-right: auto !important;
   color: var(--heading, #111827) !important;
