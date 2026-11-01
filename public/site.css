@@ -503,14 +503,3 @@ h1 {
     text-align: center !important;
   }
 }
-
-/* Shared accessibility and small-screen fixes. */
-:focus-visible { outline: 3px solid #0284c7; outline-offset: 3px; }
-.storage-note { color: var(--hint-text, #475569); max-width: 85ch; }
-.plotly-graph-div { max-width: 100%; }
-.control-panel input { min-width: 0; }
-@media (max-width: 760px) {
-  .terminal-layout { grid-template-columns: minmax(0, 1fr) !important; }
-  .terminal-shell, .visual-output-panel { min-width: 0; }
-  .terminal-output { white-space: pre-wrap; overflow-wrap: anywhere; }
-}

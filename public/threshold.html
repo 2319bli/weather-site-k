@@ -1,18 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="description" content="Explore historical UK weather: temperature, rainfall, thresholds and interactive rankings.">
-    <script src="js/data.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta charset="UTF-8">
-    <title>CET Threshold Days | Weather Lab</title>
+    <title>CET — Cumulative days ≥ threshold (Plotly)</title>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-    
-
-
-    <link rel="stylesheet" href="css/threshold.css">
-    <link rel="stylesheet" href="css/site.css">
-    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        
+:root {
+  --bg-html: #f5f7fa;
+  --bg-body: #f5f7fa;
+  --text-body: #222;
+  --nav-border: #d8dee8;
+  --nav-link: #273244;
+  --nav-link-bg: #fff;
+  --nav-link-border: #ccd3dd;
+  --nav-link-hover: #fff;
+  --nav-link-hover-bg: #273244;
+  --heading: #222;
+  --panel-bg: #fff;
+  --panel-border: #dcdcdc;
+  --panel-shadow: rgba(0,0,0,0.05);
+  --tab-text: #666;
+  --tab-active-text: #222;
+  --tab-active-border: #1f77ff;
+  --btn-bg: #f0f0f0;
+  --btn-border: #ccc;
+  --btn-active-bg: #4CAF50;
+  --hint-text: #666;
+  --table-border: #e5e7eb;
+}
+body {
+            font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: var(--bg-body);
+            color: var(--text-body);
+        }
+        .layout {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        .chart-area {
+            flex: 1 1 auto;
+        }
+        .control-panel {
+            width: 280px;
+            background: var(--nav-link-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 16px;
+            box-shadow: 0 2px 10px var(--panel-shadow);
+        }
+        .control-panel h2 {
+            margin-top: 0;
+            font-size: 1.1rem;
+        }
+        .control-panel form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .control-panel input[type="number"] {
+            flex: 1 1 auto;
+            padding: 6px 8px;
+        }
+        .control-panel button {
+            padding: 6px 10px;
+        }
+        .hint {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            color: var(--tab-text);
+        }
+        .error {
+            display: block;
+            min-height: 18px;
+            margin-bottom: 8px;
+        }
+        .year-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .year-list li {
+            border-radius: 16px;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            color: var(--nav-link-hover);
+        }
+        .year-list button {
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--hint-text);
+        }
+        .summary-box {
+            margin-top: 12px;
+            background: var(--nav-link-bg);
+            border: 1px solid var(--btn-border);
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 1.8rem;
+        }
+        #chart {
+            width: 100%;
+            height: 720px;
+            background: var(--nav-link-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            box-shadow: 0 2px 10px var(--panel-shadow);
+        }
+        .caption {
+            margin-top: 8px;
+            font-size: 0.95rem;
+            color: var(--hint-text);
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--tab-text);
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            color: var(--text-body);
+        }
+        .tab.active {
+            color: var(--text-body);
+            border-bottom-color: var(--tab-active-border);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .month-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .month-selector select {
+            width: 100%;
+            padding: 8px;
+            font-size: 1rem;
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+        }
+        .threshold-row {
+            margin-bottom: 16px;
+        }
+        .threshold-row label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .threshold-row input {
+            width: 100%;
+            padding: 8px;
+            font-size: 1rem;
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+<style>
+.site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 0 0 24px;
+    padding: 12px 0 16px;
+    border-bottom: 1px solid #d8dee8;
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+}
+.site-nav a {
+    color: #273244;
+    text-decoration: none;
+    border: 1px solid #ccd3dd;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: #fff;
+    font-size: 14px;
+    line-height: 1;
+}
+.site-nav a:hover,
+.site-nav a[aria-current="page"] {
+    color: #fff;
+    background: #273244;
+    border-color: #273244;
+}
+.plotly-graph-div {
+    max-width: 100%;
+}
+@media (max-width: 720px) {
+    body {
+        padding: 14px !important;
+    }
+    .site-nav a {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+    .layout {
+        flex-direction: column;
+    }
+    .control-panel {
+        width: auto !important;
+        max-width: 100%;
+    }
+    #chart {
+        height: 520px !important;
+    }
+}
+</style>
+<style>
+.theme-toggle {
+    margin-left: auto;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px 28px 6px 10px;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+</style>
+    <link rel="stylesheet" href="site.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <nav class="site-nav" aria-label="Main navigation">
@@ -23,15 +270,15 @@
     <a href="fei.html">FEI</a>
     <a href="terminal.html">Terminal</a>
     <select id="theme-toggle" class="theme-toggle" aria-label="Theme">
-        <option value="kimi-1">Sky</option>
-        <option value="kimi-2">Midnight</option>
-        <option value="kimi-3">Amber</option>
-        <option value="codex-1">Slate</option>
-        <option value="codex-2">Ink</option>
-        <option value="codex-3">Sand</option>
-        <option value="claude-1">Paper</option>
-        <option value="claude-2">Forest</option>
-        <option value="claude-3">Twilight</option>
+        <option value="kimi-1">kimi 1</option>
+        <option value="kimi-2">kimi 2</option>
+        <option value="kimi-3">kimi 3</option>
+        <option value="codex-1">codex 1</option>
+        <option value="codex-2">codex 2</option>
+        <option value="codex-3">codex 3</option>
+        <option value="claude-1">claude 1</option>
+        <option value="claude-2">claude 2</option>
+        <option value="claude-3">claude 3</option>
         </select>
 </nav>
     <h1>Central England Temperature — Cumulative days ≥ threshold</h1>
@@ -138,7 +385,740 @@
         Data: <code>MeanTempCET.csv</code> (daily means). Days with mean ≥ threshold are counted inclusively, matching <code>temperature_analysis.py</code>. Optional <code>forecast_2026.csv</code> extends 2026 as a dotted segment after the reference date when present.
     </p>
 
-    <script src="js/threshold-1.js"></script>
-<script src="js/theme.js"></script>
+    <script>
+    (function () {
+        const CSV_PATH = "data/MeanTempCET.csv";
+        const FORECAST_2026_PATH = "data/forecast_2026.csv";
+        const DEFAULT_YEARS = [2025, 2024, 2023, 2022, 2020, 2018, 2026, 2014, 2011, 2006];
+        const COLOR_PALETTE = [
+            "#ff4136", "#ff851b", "#ffd700", "#39ff14", "#006400",
+            "#00ced1", "#1f77ff", "#4b0082", "#8000ff", "#ff69b4"
+        ];
+        const MAX_YEARS = 10;
+        let TARGET_DATE = null;
+
+        function dayOfYear(date) {
+            const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+            return Math.floor((date - start) / 86400000);
+        }
+
+        function parseDateFlexible(text) {
+            if (!text) return null;
+            const trimmed = text.trim();
+            if (trimmed.includes("-")) {
+                const iso = new Date(trimmed + "T00:00:00Z");
+                return Number.isNaN(iso.getTime()) ? null : iso;
+            }
+            if (trimmed.includes("/")) {
+                const parts = trimmed.split("/").map((part) => parseInt(part, 10));
+                if (parts.length === 3 && parts.every((n) => Number.isInteger(n))) {
+                    const [day, month, year] = parts;
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    return Number.isNaN(date.getTime()) ? null : date;
+                }
+            }
+            return null;
+        }
+
+        async function loadCsvRows(path) {
+            const response = await fetch(path, { cache: "no-store" });
+            if (!response.ok) {
+                throw new Error(`Failed to load CSV (${response.status} ${response.statusText})`);
+            }
+            const text = await response.text();
+            const lines = text.trim().split(/\r?\n/);
+            const firstLine = lines[0];
+            if (firstLine && /date/i.test(firstLine.split(",")[0])) {
+                lines.shift();
+            }
+            return lines.map((line) => {
+                if (!line.trim()) return null;
+                const [dateStr, valueStr] = line.split(",");
+                const date = parseDateFlexible(dateStr);
+                const value = parseFloat(valueStr);
+                if (!date || Number.isNaN(value) || Number.isNaN(date.getTime())) {
+                    return null;
+                }
+                return {
+                    date,
+                    value,
+                    year: date.getUTCFullYear(),
+                    month: date.getUTCMonth() + 1,
+                    doy: dayOfYear(date)
+                };
+            }).filter(Boolean);
+        }
+
+        function latestDateForYear(rows, year) {
+            const entries = rows
+                .filter((row) => row.year === year)
+                .slice()
+                .sort((a, b) => a.date - b.date);
+            return entries.length ? new Date(entries[entries.length - 1].date) : null;
+        }
+
+        function buildMonthShapes(monthStarts, targetDoy) {
+            const shapes = monthStarts.map((doy) => ({
+                type: "line",
+                x0: doy,
+                x1: doy,
+                y0: 0,
+                y1: 1,
+                xref: "x",
+                yref: "paper",
+                line: { color: "rgba(150,150,150,0.35)", width: 1, dash: "dot" }
+            }));
+            shapes.push({
+                type: "line",
+                x0: targetDoy,
+                x1: targetDoy,
+                y0: 0,
+                y1: 1,
+                xref: "x",
+                yref: "paper",
+                line: { color: "green", width: 2 }
+            });
+            return shapes;
+        }
+
+        function countDaysAboveInYear(rows, year, threshold) {
+            return rows.filter((r) => r.year === year && r.value >= threshold).length;
+        }
+
+        function countDaysAboveInMonth(rows, year, month, threshold) {
+            return rows.filter(
+                (r) => r.year === year && r.month === month && r.value >= threshold
+            ).length;
+        }
+
+        function getYearsAnnualPreset(mode, rows, threshold, availableYears, currentYear, maxYears) {
+            const stats = [];
+            availableYears.forEach((y) => {
+                if (y === 2026) return;
+                stats.push({ year: y, count: countDaysAboveInYear(rows, y, threshold) });
+            });
+            if (mode === "last9") {
+                const LAST9 = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017];
+                return LAST9.filter((y) => availableYears.has(y)).slice(0, maxYears);
+            }
+            if (mode === "most") {
+                stats.sort((a, b) => b.count - a.count || a.year - b.year);
+            } else if (mode === "fewest") {
+                stats.sort((a, b) => a.count - b.count || a.year - b.year);
+            } else if (mode === "mixed") {
+                stats.sort((a, b) => b.count - a.count || a.year - b.year);
+                const top = stats.filter((s) => s.year !== currentYear).slice(0, 5);
+                const rest = stats.filter((s) => s.year !== currentYear).slice();
+                rest.sort((a, b) => a.count - b.count || a.year - b.year);
+                const bottom = rest.slice(0, 4);
+                const set = new Set([...top.map((t) => t.year), ...bottom.map((b) => b.year), currentYear]);
+                return Array.from(set).slice(0, maxYears);
+            }
+            const filtered = stats.filter((s) => s.year !== currentYear).slice(0, 9);
+            return [...filtered.map((s) => s.year), currentYear].filter((y, i, a) => a.indexOf(y) === i).slice(0, maxYears);
+        }
+
+        function getYearsMonthlyPreset(month, mode, rows, threshold, availableYears, currentYear, maxYears) {
+            const stats = [];
+            availableYears.forEach((y) => {
+                stats.push({ year: y, count: countDaysAboveInMonth(rows, y, month, threshold) });
+            });
+            if (mode === "most") {
+                stats.sort((a, b) => b.count - a.count || a.year - b.year);
+            } else if (mode === "fewest") {
+                stats.sort((a, b) => a.count - b.count || a.year - b.year);
+            } else {
+                stats.sort((a, b) => b.count - a.count || a.year - b.year);
+                const top = stats.filter((s) => s.year !== currentYear).slice(0, 5);
+                const rest = stats.filter((s) => s.year !== currentYear).slice();
+                rest.sort((a, b) => a.count - b.count || a.year - b.year);
+                const bottom = rest.slice(0, 4);
+                const set = new Set([...top.map((t) => t.year), ...bottom.map((b) => b.year), currentYear]);
+                return Array.from(set).slice(0, maxYears);
+            }
+            const filtered = stats.filter((s) => s.year !== currentYear).slice(0, 9);
+            return [...filtered.map((s) => s.year), currentYear].filter((y, i, a) => a.indexOf(y) === i).slice(0, maxYears);
+        }
+
+        function cumulativePointsFromEntries(entries, threshold) {
+            let cum = 0;
+            return entries.map((entry) => {
+                if (entry.value >= threshold) cum += 1;
+                return { ...entry, cum };
+            });
+        }
+
+        Promise.all([
+            loadCsvRows(CSV_PATH),
+            loadCsvRows(FORECAST_2026_PATH).catch(() => [])
+        ]).then(([rows, forecast2026Rows]) => {
+            const observedRows = rows.slice();
+            const currentYear = new Date().getUTCFullYear();
+            TARGET_DATE = latestDateForYear(observedRows, 2026) ||
+                latestDateForYear(observedRows, currentYear) ||
+                (observedRows.length ? new Date(observedRows[observedRows.length - 1].date) : new Date());
+            const availableYears = new Set(rows.map((r) => r.year));
+            if (forecast2026Rows.length > 0) {
+                availableYears.add(2026);
+                rows = rows.concat(forecast2026Rows);
+            }
+
+            const state = {
+                rows,
+                forecast2026: forecast2026Rows,
+                threshold: 15,
+                years: DEFAULT_YEARS.slice(0, MAX_YEARS).filter((y) => availableYears.has(y)),
+                monthlyYears: null,
+                currentView: "annual",
+                selectedMonth: 12,
+                yearMode: "most",
+                annualYearMode: "most",
+                annualYearsCustom: false
+            };
+            state.years.sort((a, b) => b - a);
+
+            const chartEl = document.getElementById("chart");
+            const summaryEl = document.getElementById("threshold-summary");
+            const forecastSummaryEl = document.getElementById("forecast-summary");
+            const listEl = document.getElementById("year-list");
+            const form = document.getElementById("year-form");
+            const input = document.getElementById("year-input");
+            const errorEl = document.getElementById("year-error");
+            const monthSelect = document.getElementById("month-select");
+            const listElMonthly = document.getElementById("year-list-monthly");
+            const formMonthly = document.getElementById("year-form-monthly");
+            const inputMonthly = document.getElementById("year-input-monthly");
+            const errorElMonthly = document.getElementById("year-error-monthly");
+            const thresholdInput = document.getElementById("threshold-input");
+
+            function getThreshold() {
+                const v = parseFloat(thresholdInput.value, 10);
+                return Number.isFinite(v) ? v : state.threshold;
+            }
+
+            function applyAnnualPreset() {
+                const t = getThreshold();
+                state.years = getYearsAnnualPreset(
+                    state.annualYearMode,
+                    state.rows,
+                    t,
+                    availableYears,
+                    currentYear,
+                    MAX_YEARS
+                );
+            }
+
+            thresholdInput.addEventListener("input", () => {
+                state.threshold = getThreshold();
+                if (!state.annualYearsCustom) {
+                    applyAnnualPreset();
+                    renderYearList();
+                }
+                if (state.currentView === "annual") renderChart();
+                else {
+                    state.monthlyYears = null;
+                    renderMonthlyChart();
+                }
+            });
+
+            document.querySelectorAll(".tab").forEach((tab) => {
+                tab.addEventListener("click", () => {
+                    const tabName = tab.dataset.tab;
+                    state.currentView = tabName;
+                    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+                    tab.classList.add("active");
+                    document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+                    document.getElementById(`${tabName}-controls`).classList.add("active");
+                    if (tabName === "annual") {
+                        if (!state.annualYearsCustom) {
+                            applyAnnualPreset();
+                            renderYearList();
+                        }
+                        renderChart();
+                    } else {
+                        renderMonthlyChart();
+                    }
+                });
+            });
+
+            monthSelect.addEventListener("change", () => {
+                state.selectedMonth = parseInt(monthSelect.value, 10);
+                state.monthlyYears = null;
+                if (state.currentView === "months") renderMonthlyChart();
+            });
+
+            function updateModeButtons() {
+                document.querySelectorAll(".mode-button").forEach((btn) => {
+                    const on = btn.dataset.mode === state.yearMode;
+                    btn.style.background = on ? "#4CAF50" : "#f0f0f0";
+                    btn.style.color = on ? "#fff" : "#000";
+                    btn.style.borderColor = on ? "#4CAF50" : "#ccc";
+                });
+            }
+
+            document.querySelectorAll(".mode-button").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    state.yearMode = btn.dataset.mode;
+                    updateModeButtons();
+                    state.monthlyYears = null;
+                    if (state.currentView === "months") renderMonthlyChart();
+                });
+            });
+            updateModeButtons();
+
+            function updateAnnualModeButtons() {
+                document.querySelectorAll(".mode-button-annual").forEach((btn) => {
+                    const on = btn.dataset.mode === state.annualYearMode;
+                    btn.style.background = on ? "#4CAF50" : "#f0f0f0";
+                    btn.style.color = on ? "#fff" : "#000";
+                    btn.style.borderColor = on ? "#4CAF50" : "#ccc";
+                });
+            }
+
+            document.querySelectorAll(".mode-button-annual").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    state.annualYearMode = btn.dataset.mode;
+                    state.annualYearsCustom = false;
+                    applyAnnualPreset();
+                    updateAnnualModeButtons();
+                    renderYearList();
+                    if (state.currentView === "annual") renderChart();
+                });
+            });
+            updateAnnualModeButtons();
+
+            function entriesForYearFull2026(year, allRows, forecastRows) {
+                if (year !== 2026) return allRows.filter((r) => r.year === year).sort((a, b) => a.date - b.date);
+                const forecastDates = new Set((forecastRows || []).map((e) => e.date.getTime()));
+                const actual = allRows.filter((r) => r.year === 2026 && !forecastDates.has(r.date.getTime()));
+                const dataMap = new Map();
+                actual.forEach((e) => dataMap.set(e.date.getTime(), e));
+                (forecastRows || []).forEach((e) => {
+                    if (!dataMap.has(e.date.getTime())) dataMap.set(e.date.getTime(), e);
+                });
+                return Array.from(dataMap.values()).sort((a, b) => a.date - b.date);
+            }
+
+            function renderChart() {
+                const threshold = getThreshold();
+                let YEARS = state.years.length
+                    ? state.years
+                    : DEFAULT_YEARS.slice(0, MAX_YEARS).filter((y) => availableYears.has(y));
+                const targetDoy = dayOfYear(TARGET_DATE);
+                const traces = [];
+                const endCounts = [];
+
+                YEARS.forEach((year, idx) => {
+                    const color = COLOR_PALETTE[idx] || "#999";
+                    const allEntries = entriesForYearFull2026(year, state.rows, state.forecast2026);
+
+                    if (year === 2026 && state.forecast2026 && state.forecast2026.length) {
+                        const confirmed = allEntries.filter((e) => e.date <= TARGET_DATE);
+                        const forecastOnly = allEntries.filter((e) => e.date > TARGET_DATE);
+                        const confPts = cumulativePointsFromEntries(confirmed, threshold);
+                        if (confPts.length) {
+                            traces.push({
+                                x: confPts.map((p) => p.doy),
+                                y: confPts.map((p) => p.cum),
+                                mode: "lines",
+                                name: `${year} (cumulative)`,
+                                line: { color, width: 2 },
+                                customdata: confPts.map((p) => ({
+                                    label: p.date.toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric"
+                                    }),
+                                    cum: p.cum
+                                })),
+                                hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
+                            });
+                        }
+                        if (forecastOnly.length && confPts.length) {
+                            let acc = confPts[confPts.length - 1].cum;
+                            const fcLine = forecastOnly.map((e) => {
+                                if (e.value >= threshold) acc += 1;
+                                return { ...e, cum: acc };
+                            });
+                            traces.push({
+                                x: fcLine.map((p) => p.doy),
+                                y: fcLine.map((p) => p.cum),
+                                mode: "lines",
+                                name: `${year} forecast (cumulative)`,
+                                line: { color, width: 2, dash: "dot" },
+                                customdata: fcLine.map((p) => ({
+                                    label: p.date.toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric"
+                                    }),
+                                    cum: p.cum
+                                })),
+                                hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
+                            });
+                        }
+                        const last = allEntries.length ? cumulativePointsFromEntries(allEntries, threshold).pop() : null;
+                        endCounts.push({ year, cum: last ? last.cum : null });
+                        return;
+                    }
+
+                    const entries = allEntries;
+                    if (!entries.length) {
+                        endCounts.push({ year, cum: null });
+                        return;
+                    }
+                    const pts = cumulativePointsFromEntries(entries, threshold);
+                    endCounts.push({ year, cum: pts.length ? pts[pts.length - 1].cum : 0 });
+                    traces.push({
+                        x: pts.map((p) => p.doy),
+                        y: pts.map((p) => p.cum),
+                        mode: "lines",
+                        name: `${year} (cumulative)`,
+                        line: { color, width: 2 },
+                        customdata: pts.map((p) => ({
+                            label: p.date.toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric"
+                            }),
+                            cum: p.cum
+                        })),
+                        hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
+                    });
+                });
+
+                endCounts.sort((a, b) => {
+                    if (a.cum === null && b.cum === null) return 0;
+                    if (a.cum === null) return 1;
+                    if (b.cum === null) return -1;
+                    return b.cum - a.cum;
+                });
+                const summaryLines = endCounts.map((x) =>
+                    x.cum === null ? `${x.year}: n/a` : `${x.year}: ${x.cum} days`
+                );
+                const td = TARGET_DATE.getUTCDate();
+                const tm = TARGET_DATE.toLocaleString("en-GB", { month: "short" });
+                summaryEl.innerHTML =
+                    `<strong>Year-end cumulative count (or last available day) — high → low</strong><br>` +
+                    summaryLines.join("<br>") +
+                    `<br><small>Green vertical line: ${td} ${tm} (day of year ${targetDoy}).</small>`;
+
+                const pt = endCounts.find((e) => e.year === 2026);
+                forecastSummaryEl.innerHTML =
+                    pt && pt.cum !== null && state.forecast2026.length
+                        ? `<strong>2026 includes forecast after ${td} ${tm} where applicable (dotted).</strong>`
+                        : "";
+
+                const monthStarts = Array.from({ length: 12 }, (_, i) =>
+                    dayOfYear(new Date(Date.UTC(2025, i, 1)))
+                );
+                const layout = {
+                    title: `Cumulative days with mean ≥ ${threshold}°C (by day of year)`,
+                    xaxis: {
+                        title: "Day of year",
+                        tickmode: "array",
+                        tickvals: monthStarts,
+                        ticktext: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                        range: [1, 366]
+                    },
+                    yaxis: {
+                        title: "Cumulative days ≥ threshold",
+                        rangemode: "tozero"
+                    },
+                    margin: { l: 60, r: 20, t: 70, b: 60 },
+                    legend: { orientation: "h", x: 0, y: -0.2 },
+                    shapes: buildMonthShapes(monthStarts, targetDoy)
+                };
+
+                chartEl.textContent = "";
+                Plotly.newPlot(chartEl, traces, layout, { responsive: true });
+            }
+
+            function renderMonthlyChart() {
+                const threshold = getThreshold();
+                const month = state.selectedMonth;
+                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                const monthName = monthNames[month - 1];
+
+                let defaultYears = getYearsMonthlyPreset(
+                    month,
+                    state.yearMode,
+                    state.rows,
+                    threshold,
+                    availableYears,
+                    currentYear,
+                    MAX_YEARS
+                );
+                if (state.monthlyYears === null) {
+                    state.monthlyYears = [...defaultYears];
+                }
+                const YEARS = state.monthlyYears.length ? state.monthlyYears : defaultYears;
+                const maxDom = Math.max(
+                    ...YEARS.map((y) => new Date(Date.UTC(y, month, 0)).getUTCDate())
+                );
+
+                const traces = [];
+                const endCounts = [];
+
+                YEARS.forEach((year, idx) => {
+                    const color = COLOR_PALETTE[idx] || "#999";
+                    let entries = entriesForYearFull2026(year, state.rows, state.forecast2026).filter(
+                        (r) => r.month === month
+                    );
+                    if (!entries.length) {
+                        endCounts.push({ year, cum: null });
+                        return;
+                    }
+
+                    if (year === 2026 && state.forecast2026.length) {
+                        const confirmed = entries.filter((e) => e.date <= TARGET_DATE);
+                        const forecastOnly = entries.filter((e) => e.date > TARGET_DATE);
+                        const confPts = cumulativePointsFromEntries(confirmed, threshold);
+                        if (confPts.length) {
+                            traces.push({
+                                x: confPts.map((p) => p.date.getUTCDate()),
+                                y: confPts.map((p) => p.cum),
+                                mode: "lines",
+                                name: `${year} (${monthName})`,
+                                line: { color, width: 2 },
+                                customdata: confPts.map((p) => ({
+                                    label: p.date.toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric"
+                                    }),
+                                    cum: p.cum
+                                })),
+                                hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
+                            });
+                        }
+                        if (forecastOnly.length && confPts.length) {
+                            let acc = confPts[confPts.length - 1].cum;
+                            const fcLine = forecastOnly.map((e) => {
+                                if (e.value >= threshold) acc += 1;
+                                return { ...e, cum: acc };
+                            });
+                            traces.push({
+                                x: fcLine.map((p) => p.date.getUTCDate()),
+                                y: fcLine.map((p) => p.cum),
+                                mode: "lines",
+                                name: `${year} forecast (${monthName})`,
+                                line: { color, width: 2, dash: "dot" },
+                                customdata: fcLine.map((p) => ({
+                                    label: p.date.toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric"
+                                    }),
+                                    cum: p.cum
+                                })),
+                                hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
+                            });
+                        }
+                        const full = cumulativePointsFromEntries(entries, threshold);
+                        endCounts.push({ year, cum: full.length ? full[full.length - 1].cum : null });
+                        return;
+                    }
+
+                    const pts = cumulativePointsFromEntries(entries, threshold);
+                    endCounts.push({ year, cum: pts[pts.length - 1].cum });
+                    traces.push({
+                        x: pts.map((p) => p.date.getUTCDate()),
+                        y: pts.map((p) => p.cum),
+                        mode: "lines",
+                        name: `${year} (${monthName})`,
+                        line: { color, width: 2 },
+                        customdata: pts.map((p) => ({
+                            label: p.date.toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric"
+                            }),
+                            cum: p.cum
+                        })),
+                        hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
+                    });
+                });
+
+                endCounts.sort((a, b) => {
+                    if (a.cum === null && b.cum === null) return 0;
+                    if (a.cum === null) return 1;
+                    if (b.cum === null) return -1;
+                    return b.cum - a.cum;
+                });
+                const modeLabel =
+                    state.yearMode === "most"
+                        ? "Most days ≥ threshold"
+                        : state.yearMode === "fewest"
+                          ? "Fewest days ≥ threshold"
+                          : "Mixed (5 most + 4 fewest)";
+                summaryEl.innerHTML =
+                    `<strong>${modeLabel} for ${monthName} (full month cumulative) — high → low</strong><br>` +
+                    endCounts.map((x) => (x.cum === null ? `${x.year}: n/a` : `${x.year}: ${x.cum} days`)).join("<br>");
+                forecastSummaryEl.innerHTML = "";
+
+                const shapes = [];
+                if (month === TARGET_DATE.getUTCMonth() + 1) {
+                    const dom = TARGET_DATE.getUTCDate();
+                    shapes.push({
+                        type: "line",
+                        x0: dom,
+                        x1: dom,
+                        y0: 0,
+                        y1: 1,
+                        xref: "x",
+                        yref: "paper",
+                        line: { color: "green", width: 2 }
+                    });
+                }
+
+                const layout = {
+                    title: `${monthName}: cumulative days with mean ≥ ${threshold}°C (by day of month)`,
+                    xaxis: { title: "Day of month", range: [1, maxDom] },
+                    yaxis: { title: "Cumulative days ≥ threshold", rangemode: "tozero" },
+                    margin: { l: 60, r: 20, t: 70, b: 60 },
+                    legend: { orientation: "h", x: 0, y: -0.2 },
+                    shapes
+                };
+
+                chartEl.textContent = "";
+                Plotly.newPlot(chartEl, traces, layout, { responsive: true });
+                renderMonthlyYearList();
+            }
+
+            function renderYearList() {
+                listEl.innerHTML = "";
+                state.years.forEach((year, idx) => {
+                    const li = document.createElement("li");
+                    const color = COLOR_PALETTE[idx] || "#666";
+                    li.style.background = color;
+                    li.style.border = `1px solid ${color}`;
+                    li.textContent = String(year);
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.textContent = "×";
+                    btn.addEventListener("click", () => {
+                        state.annualYearsCustom = true;
+                        state.years = state.years.filter((y) => y !== year);
+                        renderYearList();
+                        if (state.currentView === "annual") renderChart();
+                    });
+                    li.appendChild(btn);
+                    listEl.appendChild(li);
+                });
+            }
+
+            function renderMonthlyYearList() {
+                if (!listElMonthly) return;
+                listElMonthly.innerHTML = "";
+                const yearsToRender = state.monthlyYears || [];
+                yearsToRender.forEach((year, idx) => {
+                    const li = document.createElement("li");
+                    const color = COLOR_PALETTE[idx] || "#666";
+                    li.style.background = color;
+                    li.style.border = `1px solid ${color}`;
+                    li.textContent = String(year);
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.textContent = "×";
+                    btn.addEventListener("click", () => {
+                        state.monthlyYears = state.monthlyYears.filter((y) => y !== year);
+                        renderMonthlyYearList();
+                        if (state.currentView === "months") renderMonthlyChart();
+                    });
+                    li.appendChild(btn);
+                    listElMonthly.appendChild(li);
+                });
+            }
+
+            form.addEventListener("submit", (e) => {
+                e.preventDefault();
+                errorEl.textContent = "";
+                const year = parseInt(input.value.trim(), 10);
+                if (!Number.isInteger(year)) {
+                    errorEl.textContent = "Enter a valid year.";
+                    return;
+                }
+                if (!availableYears.has(year)) {
+                    errorEl.textContent = "Year not found in dataset.";
+                    return;
+                }
+                if (state.years.includes(year)) {
+                    errorEl.textContent = "Year already added.";
+                    return;
+                }
+                if (state.years.length >= MAX_YEARS) {
+                    errorEl.textContent = "Maximum of 10 years.";
+                    return;
+                }
+                state.years.push(year);
+                state.years.sort((a, b) => b - a);
+                state.annualYearsCustom = true;
+                renderYearList();
+                if (state.currentView === "annual") renderChart();
+                form.reset();
+            });
+
+            if (formMonthly) {
+                formMonthly.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    if (errorElMonthly) errorElMonthly.textContent = "";
+                    const year = parseInt(inputMonthly.value.trim(), 10);
+                    if (!Number.isInteger(year)) {
+                        if (errorElMonthly) errorElMonthly.textContent = "Enter a valid year.";
+                        return;
+                    }
+                    if (!availableYears.has(year)) {
+                        if (errorElMonthly) errorElMonthly.textContent = "Year not found in dataset.";
+                        return;
+                    }
+                    if (!state.monthlyYears) state.monthlyYears = [];
+                    if (state.monthlyYears.includes(year)) {
+                        if (errorElMonthly) errorElMonthly.textContent = "Year already added.";
+                        return;
+                    }
+                    if (state.monthlyYears.length >= MAX_YEARS) {
+                        if (errorElMonthly) errorElMonthly.textContent = "Maximum of 10 years.";
+                        return;
+                    }
+                    state.monthlyYears.push(year);
+                    state.monthlyYears.sort((a, b) => b - a);
+                    renderMonthlyYearList();
+                    if (state.currentView === "months") renderMonthlyChart();
+                    formMonthly.reset();
+                });
+            }
+
+            state.threshold = getThreshold();
+            applyAnnualPreset();
+            updateAnnualModeButtons();
+            renderYearList();
+            renderMonthlyYearList();
+            try {
+                if (state.currentView === "annual") renderChart();
+                else renderMonthlyChart();
+            } catch (err) {
+                console.error(err);
+                chartEl.innerHTML = `<div style="padding:16px;color:#b00020;">Error: ${err.message}</div>`;
+            }
+        }).catch((error) => {
+            console.error(error);
+            const chartEl = document.getElementById("chart");
+            if (chartEl) {
+                chartEl.innerHTML = `<div style="padding:16px;color:#b00020;">Failed to load data.<br>${error.message || error}</div>`;
+            }
+        });
+    })();
+    </script>
+<script>
+(function(){
+    var t=document.getElementById("theme-toggle");
+    if(!t)return;
+    var k="weather-site-theme";
+    var s=localStorage.getItem(k);
+    if(s){document.documentElement.dataset.theme=s;t.value=s;}
+    t.addEventListener("change",function(){localStorage.setItem(k,t.value);document.documentElement.dataset.theme=t.value;});
+})();
+</script>
 </body>
 </html>

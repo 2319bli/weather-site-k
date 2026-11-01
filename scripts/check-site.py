@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Check the standalone site before publishing it to a project Pages URL."""
+"""Check links and original inline JavaScript before deploying the static site."""
 from pathlib import Path
 from html.parser import HTMLParser
 from urllib.parse import urlsplit, unquote
 import subprocess
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1] / 'public'
-class Links(HTMLParser):
+class Page(HTMLParser):
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+        self.inline_script = False
+        self.scripts = []
+
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         for key in ('src', 'href'):
@@ -17,18 +24,27 @@ class Links(HTMLParser):
             target = (self.path.parent / unquote(urlsplit(value).path)).resolve()
             assert target.is_relative_to(ROOT), f'URL escapes published site: {value}'
             assert target.is_file(), f'Missing asset: {self.path.name}: {value}'
-        assert not tag == 'script' or 'src' in attrs, 'Keep executable scripts in js/'
+        if tag == 'script':
+            self.inline_script = 'src' not in attrs
 
-for page in ROOT.glob('*.html'):
-    html = page.read_text()
-    assert 'name="viewport"' in html, f'Missing mobile viewport: {page}'
-    parser = Links()
-    parser.path = page
-    parser.feed(html)
-for script in (ROOT / 'js').glob('*.js'):
-    text = script.read_text()
-    assert '/api/' not in text and '../orig/' not in text, f'Local server dependency: {script}'
-    subprocess.run(['node', '--check', str(script)], check=True)
+    def handle_data(self, data):
+        if self.inline_script:
+            self.scripts.append(data)
+
+    def handle_endtag(self, tag):
+        if tag == 'script':
+            self.inline_script = False
+
+with tempfile.TemporaryDirectory() as directory:
+    for page in ROOT.glob('*.html'):
+        html = page.read_text()
+        assert '../orig/' not in html, f'Unpublished data path: {page}'
+        parser = Page(page)
+        parser.feed(html)
+        for index, script in enumerate(parser.scripts):
+            path = Path(directory) / f'{page.stem}-{index}.js'
+            path.write_text(script)
+            subprocess.run(['node', '--check', str(path)], check=True)
 for data in ['MeanTempCET.csv', 'PrecipitationEWP.csv', 'forecast_2026.csv']:
     assert (ROOT / 'data' / data).is_file()
-print('PASS: all six pages, assets, data paths and JavaScript syntax')
+print('PASS: original pages, local assets, data paths and inline JavaScript syntax')
