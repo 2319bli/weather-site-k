@@ -28,6 +28,14 @@ The rainfall page offers **Cumulative total**, **Daily rainfall** and **Historic
 
 Both pages share calendar and view helpers (retaining their original `temperature-*.js` filenames for existing pages). Rainfall uses totals in mm; temperature uses means in °C. The server data, mixed date parser, leap-day alignment and winter-year convention are retained.
 
+### Historical comparison to date
+
+On either page, historical comparison defaults to **Full period**. Choose **Year to date** in the annual tab to compare 1 January through that dataset's latest observed date in every year. The latest year gets a separate marker and rank. CET and EWP use their own observation cutoffs. The setting is remembered separately for each period tab during the visit.
+
+The other tabs call this **Period to date**: the selected month, season or hex-season is clipped to the observation cutoff in the reference year. Finished periods use their complete window; future periods show an explicit empty state. Winter includes the preceding December, and a December cutoff belongs to the winter ending the following year. Each comparison displays its date window and day count.
+
+To-date comparisons exclude 29 February from every year, so all years use the same calendar dates. Years with missing observations are shown separately and unranked; an entirely missing period is not zero rainfall. Forecasts and projections are excluded. Full-period statistics and cumulative charts retain their original treatment of leap days and their original values.
+
 ## Terminal
 
 Open **Terminal** from the public site and sign in with the admin password. The password is not in this repository or the browser code. Cloudflare stores a salted PBKDF2 verifier as the `ADMIN_PASSWORD_HASH` secret. Login attempts are rate limited; sessions use Secure, HttpOnly, SameSite cookies and expire after eight hours. Every admin API requires a valid session, and writes require a matching Origin. Changing the password invalidates existing sessions.
@@ -84,6 +92,8 @@ Dashboard tests check independently calculated archive statistics, partial perio
 Temperature tests cover calendar alignment, winter boundaries, tied and superseded daily records, forecast exclusion, complete and incomplete historical periods, duplicate observations and independently grouped archive values. Browser checks compare cumulative trace values before and after the new view controls and exercise every mode, record selection, period selectors and mobile layouts.
 
 Rainfall tests distinguish period totals from daily means, preserve zero rainfall and wettest-record ties, and compare all annual, February, winter and Phaier totals against independent sums from the full EWP archive. Browser checks cover all 12 rainfall modes, unchanged cumulative values, record toggles, year controls, period selectors and mobile layouts, along with temperature regressions.
+
+To-date tests cover differing observation cutoffs, both directions of leap-year comparison, gaps, zero rainfall, winter boundaries, future periods and independent CET/EWP archive calculations. Browser checks compare full-period charts before and after the change and verify the new values and ranks against the live observation responses on both pages.
 
 ## Branding and colour schemes
 

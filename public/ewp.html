@@ -250,9 +250,9 @@ body {
     <link rel="stylesheet" href="theme.css?v=design-1">
     <script src="appearance.js?v=design-1"></script>
     <link rel="icon" href="logo.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="temperature.css?v=views-2">
-    <script src="temperature-data.js?v=views-2"></script>
-    <script src="temperature-views.js?v=views-2"></script>
+    <link rel="stylesheet" href="temperature.css?v=views-3">
+    <script src="temperature-data.js?v=views-3"></script>
+    <script src="temperature-views.js?v=views-3"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -303,6 +303,13 @@ body {
         <button type="button" data-chart-mode="cumulative" aria-pressed="true">Cumulative total</button>
         <button type="button" data-chart-mode="daily" aria-pressed="false">Daily rainfall</button>
         <button type="button" data-chart-mode="historical" aria-pressed="false">Historical comparison</button>
+    </div>
+    <div id="history-controls" class="history-controls" hidden>
+        <div class="chart-mode-switch history-range-switch" role="group" aria-label="Historical comparison range">
+            <button type="button" data-history-range="full" aria-pressed="true">Full period</button>
+            <button type="button" data-history-range="ytd" aria-pressed="false">Year to date</button>
+        </div>
+        <p id="history-range-note" class="hint" aria-live="polite"></p>
     </div>
     <div id="daily-controls" class="daily-controls" hidden>
         <label><input id="show-daily-records" type="checkbox" checked> Show wettest daily records</label>

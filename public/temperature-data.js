@@ -113,6 +113,10 @@
                 days: rows.length, expected, complete: rows.length === expected,
                 first: rows[0].iso, last: rows.at(-1).iso, rank: null };
         });
+        return rankHistory(result);
+    }
+
+    function rankHistory(result) {
         const ranked = result.filter(row => row.complete).sort((a, b) => b.value - a.value);
         ranked.forEach((row, index) => {
             row.rank = index && Math.abs(row.value - ranked[index - 1].value) < 1e-10 ? ranked[index - 1].rank : index + 1;
@@ -120,7 +124,32 @@
         return result;
     }
 
-    const api = { period, slots, createArchive, years, entries, daily, heldRecords, history };
+    // Compare identical calendar dates, not day-of-year numbers. February 29
+    // is omitted in every year; a missing observation leaves the year unranked.
+    function historyToDate(archive, period, aggregation = 'mean') {
+        const latest = archive.rows.at(-1);
+        if (!latest) return { rows: [], referenceYear: null, cutoff: null, start: null, end: null, expected: 0 };
+        const referenceYear = periodYear(latest, period);
+        const calendar = slots(period, referenceYear).filter(day => day.iso <= latest.iso && day.key !== '02-29');
+        const window = { referenceYear, cutoff: latest.iso, start: calendar[0]?.iso ?? null,
+            end: calendar.at(-1)?.iso ?? null, expected: calendar.length };
+        if (!calendar.length) return { ...window, rows: [] };
+        const keys = new Set(calendar.map(day => day.key));
+        const candidates = [...new Set([...years(archive, period).filter(year => year <= referenceYear), referenceYear])].sort((a, b) => a - b);
+        const rows = candidates.map(year => {
+            const observed = entries(archive, period, year).filter(row => keys.has(row.key));
+            const total = observed.length ? observed.reduce((sum, row) => sum + row.value, 0) : null;
+            const mean = observed.length ? total / observed.length : null;
+            const candidateDate = day => iso(period.winter && day.month === 12 ? year - 1 : year, day.month, day.day);
+            return { year, mean, total, value: aggregation === 'total' ? total : mean,
+                days: observed.length, expected: calendar.length, complete: observed.length === calendar.length,
+                first: observed[0]?.iso ?? null, last: observed.at(-1)?.iso ?? null,
+                windowStart: candidateDate(calendar[0]), windowEnd: candidateDate(calendar.at(-1)), rank: null };
+        });
+        return { ...window, rows: rankHistory(rows) };
+    }
+
+    const api = { period, slots, createArchive, years, entries, daily, heldRecords, history, historyToDate };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.WeatherAnalysis = root.CETAnalysis = api;
 })(typeof window !== 'undefined' ? window : globalThis);

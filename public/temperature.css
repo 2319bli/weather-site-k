@@ -6,6 +6,12 @@
 .daily-controls label { display: inline-flex; align-items: center; gap: 8px; }
 .daily-controls select { padding: 6px 10px; border: 1px solid var(--panel-border); border-radius: 4px; background: var(--panel-bg); color: var(--text-body); }
 .daily-controls input { accent-color: var(--nav-active-line); }
+.history-controls { margin-bottom: 18px; }
+.history-controls[hidden] { display: none; }
+.history-range-switch { margin-bottom: 8px; }
+#history-range-note { margin: 0; }
+#history-range-note:empty { display: none; }
+.history-empty { display: grid; place-content: center; height: 100%; margin: 0; padding: 24px; text-align: center; color: var(--hint-text); }
 #target-summary { margin-top: 14px; }
 :is(#temperature-details, #rainfall-details):empty { display: none; }
 :is(#temperature-details, #rainfall-details) details { padding: 16px; border: 1px solid var(--panel-border); border-radius: 6px; background: var(--panel-bg); }
