@@ -115,5 +115,7 @@ $('sunshine-sort').addEventListener('change', safeRender);
 $('sunshine-dataset').addEventListener('change', load);
 $('sunshine-refresh').addEventListener('click', load);
 new MutationObserver(safeRender).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+const requestedDataset = new URLSearchParams(location.search).get('dataset');
+if (Object.hasOwn(SUNSHINE, requestedDataset)) $('sunshine-dataset').value = requestedDataset;
 updatePeriodControls();
 load();

@@ -10,9 +10,11 @@ The existing chart calculations and mixed ISO/day-first date parsers are preserv
 
 ## Homepage overview
 
-The overview selects the latest observed year by default and lets visitors choose another year or refresh the server data. It shows year-to-date CET and rainfall, their archive rankings, monthly comparisons, the last 30 days, daily highs/lows, the longest run with EWP below 1 mm, and the annual hottest/coldest records. It shows each series' actual observation cut-off and excludes forecasts.
+The overview selects the latest observed year by default and lets visitors choose another year or refresh the server data. It shows year-to-date CET, rainfall and sunshine, their archive rankings, monthly comparisons, the last 30 days, daily highs/lows, the longest run with EWP below 1 mm, and the annual hottest/coldest records. It shows each series' actual observation cut-off and excludes forecasts.
 
 Comparisons use matching calendar dates and a 1991–2020 reference average. Leap day is omitted from period comparisons; daily highlights retain it. Incomplete historical windows are excluded from rankings, and incomplete selected periods receive no rank or anomaly. January's last-30-day window includes the preceding December. Missing observations break dry runs. The monthly chart also has an expandable table of exact figures.
+
+Sunshine uses the same four-region dropdown as the sunshine page: UK wide, England, England and Wales, and Midlands. Its summary shows sunshine hours, percentage of the 1991–2020 average and the sunniest-year rank, using January through that region’s latest confirmed month in the selected year. A sunshine option in Month by month and two columns in Monthly figures use the same region. Complete historical years use published annual totals; missing months remain unranked, and years before 1910 show no sunshine data. The Charts link carries the selected region to the sunshine page. Refresh data reloads sunshine from the server alongside the other series; switching region fetches only sunshine and retains the selected year.
 
 ## Temperature views
 

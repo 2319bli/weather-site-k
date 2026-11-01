@@ -99,6 +99,43 @@ export function summariseYear(archive, year) {
   };
 }
 
+// Sunshine observations are complete monthly totals, never synthetic daily rows.
+export function summariseSunshineYear(data, year) {
+  const byYear = new Map();
+  for (const row of data.records) {
+    const candidate = Number(row.month.slice(0, 4));
+    if (!byYear.has(candidate)) byYear.set(candidate, new Map());
+    byYear.get(candidate).set(Number(row.month.slice(5)), row.value);
+  }
+  const observed = byYear.get(year);
+  if (!observed?.size) return null;
+  const lastMonth = Math.max(...observed.keys());
+  const monthKey = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
+  const compare = slots => {
+    const measure = candidate => {
+      const values = slots.map(month => byYear.get(candidate)?.get(month)).filter(Number.isFinite);
+      const complete = values.length === slots.length;
+      const published = complete && slots.length === 12 ? data.published?.[candidate]?.ann : undefined;
+      return { year: candidate, complete, count: values.length,
+        value: values.length ? published ?? Math.round(values.reduce((a,b) => a+b, 0) * 10) / 10 : null };
+    };
+    const current = measure(year);
+    const history = [...byYear.keys()].sort((a,b) => a-b).map(measure).filter(row => row.complete);
+    const baseline = history.filter(row => row.year >= 1991 && row.year <= 2020);
+    const normal = baseline.length ? baseline.reduce((sum,row) => sum + row.value, 0) / baseline.length : null;
+    const delta = current.complete && normal !== null ? current.value - normal : null;
+    return { ...current, start: monthKey(year, slots[0]), end: monthKey(year, slots.at(-1)), expected: slots.length,
+      normal, delta, percent: delta !== null && normal !== 0 ? current.value / normal * 100 : null,
+      baselineCount: baseline.length, yearsCompared: history.length,
+      rankHigh: current.complete ? 1 + history.filter(row => row.value > current.value + 1e-8).length : null,
+      tied: current.complete && history.filter(row => Math.abs(row.value - current.value) <= 1e-8).length > 1,
+      firstYear: history[0]?.year, lastYear: history.at(-1)?.year };
+  };
+  return { year, latest: { month: monthKey(year, lastMonth) },
+    ytd: compare(Array.from({ length: lastMonth }, (_, i) => i + 1)),
+    months: Array.from({ length: 12 }, (_, i) => observed.has(i + 1) ? compare([i + 1]) : null) };
+}
+
 export function ordinal(value) {
   const mod100 = value % 100;
   const suffix = mod100 >= 11 && mod100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[value % 10] || 'th');

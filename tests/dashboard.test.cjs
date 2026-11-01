@@ -68,3 +68,79 @@ test('mixed date parsing, zero values and dry-run gaps are handled explicitly', 
   assert.equal(comparePeriod(createArchive(zero, 'ewp'), 2026, '2026-01-01', '2026-01-01').percent, null);
   assert.deepEqual([1,2,3,11,12,13,21].map(ordinal), ['1st','2nd','3rd','11th','12th','13th','21st']);
 });
+
+test('sunshine overview compares the same confirmed months in all four regions', async () => {
+  const { summariseSunshineYear } = await import('../public/dashboard-stats.mjs');
+  const { SUNSHINE, parseSunshine, sunshineHistory } = await import('../public/sunshine-data.mjs');
+  for (const { file } of Object.values(SUNSHINE)) {
+    const data = parseSunshine(fs.readFileSync(path.join(dataDirectory,'sunshine',file),'utf8'));
+    const result = summariseSunshineYear(data,2026);
+    // Independently group all monthly observations through September.
+    const sums = new Map();
+    for (const row of data.records.filter(row => Number(row.month.slice(5)) <= 9)) {
+      const year = Number(row.month.slice(0,4));
+      sums.set(year,(sums.get(year) || 0) + row.value);
+    }
+    const normal = [...sums].filter(([year]) => year >= 1991 && year <= 2020).reduce((total,[,value]) => total + value,0) / 30;
+    close(result.ytd.value,sums.get(2026)); close(result.ytd.normal,normal);
+    close(result.ytd.percent,sums.get(2026)/normal*100);
+    assert.equal(result.ytd.rankHigh,1+[...sums.values()].filter(value => value > sums.get(2026)+1e-8).length);
+    assert.equal(result.ytd.yearsCompared,117); assert.equal(result.ytd.baselineCount,30);
+    assert.equal(result.ytd.count,9); assert.equal(result.ytd.expected,9);
+    assert.equal(result.latest.month,'2026-09'); assert.equal(result.months[9],null);
+    const existing = sunshineHistory(data,'annual','ann',true).rows.at(-1);
+    close(result.ytd.value,existing.value); assert.equal(result.ytd.rankHigh,existing.rank);
+    for (let month=1;month<=9;month++) {
+      const key = `${2026}-${String(month).padStart(2,'0')}`;
+      const monthly = data.records.filter(row => Number(row.month.slice(5))===month && Number(row.month.slice(0,4))>=1991 && Number(row.month.slice(0,4))<=2020);
+      close(result.months[month-1].value,data.records.find(row => row.month===key).value);
+      close(result.months[month-1].normal,monthly.reduce((sum,row) => sum+row.value,0)/30);
+    }
+  }
+});
+
+test('sunshine overview preserves full-year published totals and handles years before the archive', async () => {
+  const { summariseSunshineYear } = await import('../public/dashboard-stats.mjs');
+  const { parseSunshine } = await import('../public/sunshine-data.mjs');
+  const data = parseSunshine(fs.readFileSync(path.join(dataDirectory,'sunshine/UK.txt'),'utf8'));
+  const result = summariseSunshineYear(data,2025);
+  assert.equal(result.latest.month,'2025-12'); assert.equal(result.ytd.value,1644.8);
+  assert.equal(result.ytd.count,12); assert.equal(result.ytd.yearsCompared,116);
+  const normal = Object.entries(data.published).filter(([year]) => year>=1991 && year<=2020).reduce((sum,[,values]) => sum+values.ann,0)/30;
+  close(result.ytd.normal,normal);
+  assert.equal(summariseSunshineYear(data,1910).ytd.value,1313.5);
+  assert.equal(summariseSunshineYear(data,1909),null);
+  assert.equal(summariseSunshineYear(data,2027),null);
+});
+
+test('new sunshine confirmations advance the overview cutoff and monthly figures', async () => {
+  const { summariseSunshineYear } = await import('../public/dashboard-stats.mjs');
+  const { parseSunshine, appendSunshine } = await import('../public/sunshine-data.mjs');
+  const data = parseSunshine(fs.readFileSync(path.join(dataDirectory,'sunshine/UK.txt'),'utf8'));
+  const before = summariseSunshineYear(data,2026);
+  data.records = appendSunshine(data.records,[{month:'2026-10',value:86.3}]);
+  const after = summariseSunshineYear(data,2026);
+  close(after.ytd.value,before.ytd.value+86.3);
+  assert.equal(after.ytd.expected,10); assert.equal(after.latest.month,'2026-10');
+  assert.equal(after.months[9].value,86.3); assert.equal(after.months[10],null);
+  assert.notEqual(before.ytd.normal,after.ytd.normal);
+});
+
+test('sunshine overview leaves gaps unranked, retains zero hours and shares tied ranks', async () => {
+  const { summariseSunshineYear } = await import('../public/dashboard-stats.mjs');
+  const data = { records: [
+    {month:'1991-01',value:0},{month:'1991-02',value:3},{month:'1991-03',value:3},
+    {month:'2024-01',value:0},{month:'2024-02',value:3},{month:'2024-03',value:3},
+    {month:'2025-01',value:0},{month:'2025-03',value:6},
+    {month:'2026-01',value:0},{month:'2026-02',value:2},{month:'2026-03',value:4}
+  ], published: {} };
+  const current = summariseSunshineYear(data,2026);
+  assert.equal(current.ytd.value,6); assert.equal(current.ytd.tied,true);
+  assert.equal(current.ytd.rankHigh,1); assert.equal(current.ytd.yearsCompared,3);
+  assert.equal(current.months[0].value,0); assert.equal(current.months[0].percent,null);
+  const missing = summariseSunshineYear(data,2025);
+  assert.equal(missing.ytd.count,2); assert.equal(missing.ytd.expected,3);
+  assert.equal(missing.ytd.complete,false); assert.equal(missing.ytd.rankHigh,null);
+  assert.equal(missing.ytd.percent,null); assert.equal(missing.ytd.delta,null);
+  assert.equal(missing.months[1],null);
+});

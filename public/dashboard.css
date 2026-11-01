@@ -1,7 +1,7 @@
 .overview-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin:0 0 28px; }
 .overview-heading .muted { margin:12px 0 0; }
 .muted, .period, .normal-label { color:var(--hint-text); font-size:12px; line-height:1.6; }
-.overview-controls { display:flex; align-items:center; gap:12px; flex:0 0 auto; }
+.overview-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; flex:0 0 auto; }
 .overview-controls label { display:flex; align-items:center; gap:9px; color:var(--hint-text); font-size:12px; }
 .overview-controls select, .overview-controls button, .metric-switch button { padding:9px 13px; border:1px solid var(--panel-border); border-radius:5px; color:var(--heading); background:var(--panel-bg); }
 .overview-controls button { font-size:12px; }
@@ -9,7 +9,7 @@
 #load-status:empty { display:none; }
 #load-status { color:var(--hint-text); padding:10px 0; }
 .summary-grid, .recent-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
-.summary-grid { margin-bottom:24px; }
+.summary-grid { margin-bottom:24px; grid-template-columns:repeat(3,minmax(0,1fr)); }
 .summary-card, .dashboard-panel, .highlight-card { min-width:0; border:1px solid var(--panel-border); border-radius:8px; background:var(--panel-bg); }
 .summary-card { padding:26px 28px 21px; border-top:3px solid var(--nav-active-line); }
 .card-heading, .panel-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; }
@@ -24,6 +24,7 @@
 .rank-line { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:6px 15px; padding-top:19px; margin-top:22px; border-top:1px solid var(--table-border); }
 .rank-line strong { font-size:16px; font-weight:650; color:var(--heading); }
 .rank-line span { font-size:11px; color:var(--hint-text); }
+.rank-line:has(strong:empty):has(span:empty) { display:none; }
 .period { margin:9px 0 0; }
 .dashboard-panel { padding:25px 28px; }
 .monthly-panel { margin-bottom:32px; }
@@ -65,6 +66,11 @@ summary { cursor:pointer; color:var(--heading); font-size:12px; font-weight:600;
 .method-note { padding:20px 0 0; border-top:1px solid var(--panel-border); color:var(--hint-text); font-size:12px; }
 .method-note li { margin:9px 0; max-width:900px; }
 [hidden] { display:none !important; }
+@media(max-width:1100px) {
+  .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #sunshine-summary { grid-column:1 / -1; }
+  .overview-heading { align-items:flex-start; flex-direction:column; gap:18px; }
+}
 @media(max-width:900px) {
   .highlights-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .overview-heading { align-items:flex-start; flex-direction:column; gap:18px; }
@@ -74,6 +80,7 @@ summary { cursor:pointer; color:var(--heading); font-size:12px; font-weight:600;
 @media(max-width:580px) {
   .summary-grid, .recent-grid { grid-template-columns:1fr; gap:15px; }
   .overview-controls { width:100%; justify-content:space-between; }
+  .sunshine-dataset-control { width:100%; order:1; justify-content:space-between; }
   .big-number { font-size:53px; }
   .summary-card, .dashboard-panel, .annual-card { padding:20px; }
   .summary-card .rank-line { margin-top:18px; }

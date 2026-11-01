@@ -1,4 +1,5 @@
-import { parseObservations, createArchive, summariseYear, ordinal } from './dashboard-stats.mjs';
+import { parseObservations, createArchive, summariseYear, summariseSunshineYear, ordinal } from './dashboard-stats.mjs?v=2';
+import { SUNSHINE } from './sunshine-data.mjs';
 
 const base = 'https://weather-site-k-admin.2319bli.workers.dev';
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -9,7 +10,9 @@ const shortDate = iso => shortFormat.format(new Date(iso));
 const numeric = (value, digits = 1) => value === null || value === undefined ? '—' : value.toLocaleString('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const signed = value => `${value >= 0 ? '+' : '−'}${numeric(Math.abs(value), 2)}`;
 const $ = selector => document.querySelector(selector);
-const state = { archives: {}, annual: {}, summaries: {}, year: null, metric: 'cet' };
+const state = { archives: {}, annual: {}, summaries: {}, year: null, metric: 'cet', sunshine: null, sunshineStatus: '', sunshineRequest: 0 };
+const monthDate = month => `${months[Number(month.slice(5)) - 1]} ${month.slice(0, 4)}`;
+const sunshineLabel = () => SUNSHINE[$('#overview-sunshine-dataset').value].label;
 
 function element(tag, text, className) {
   const result = document.createElement(tag);
@@ -18,15 +21,29 @@ function element(tag, text, className) {
   return result;
 }
 function field(container, name, text) { container.querySelector(`[data-field="${name}"]`).textContent = text; }
-function metricValue(period, kind) { return period?.value === null || !period ? '—' : `${numeric(period.value, kind === 'cet' ? 2 : 1)} ${kind === 'cet' ? '°C' : 'mm'}`; }
+function metricValue(period, kind) { return period?.value === null || !period ? '—' : `${numeric(period.value, kind === 'cet' ? 2 : 1)} ${kind === 'cet' ? '°C' : kind === 'sunshine' ? 'h' : 'mm'}`; }
 function comparison(period, kind) {
   if (!period) return 'No observations for this year.';
-  if (!period.complete) return `Incomplete observations: ${period.count} of ${period.expected} comparable days`;
+  if (!period.complete) return `Incomplete observations: ${period.count} of ${period.expected} comparable ${kind === 'sunshine' ? 'months' : 'days'}`;
   if (period.delta === null) return 'Reference average unavailable';
-  return kind === 'cet' ? `${signed(period.delta)}°C vs 1991–2020` : period.percent === null ? 'Reference rainfall is zero' : `${numeric(period.percent)}% of 1991–2020 rainfall`;
+  return kind === 'cet' ? `${signed(period.delta)}°C vs 1991–2020` : period.percent === null ? `Reference ${kind === 'sunshine' ? 'sunshine' : 'rainfall'} is zero` : `${numeric(period.percent)}% of 1991–2020 ${kind === 'sunshine' ? 'sunshine' : 'rainfall'}`;
 }
 function periodText(period) {
+  if (period.start.length === 7) return period.start === period.end ? monthDate(period.end) : `${months[Number(period.start.slice(5)) - 1]} – ${monthDate(period.end)}`;
   return `${shortDate(period.start)} – ${date(period.end)}${period.start.slice(0, 4) !== period.end.slice(0, 4) ? ` (starts ${period.start.slice(0, 4)})` : ''}`;
+}
+
+function renderSunshineSummary() {
+  const panel = $('#sunshine-summary'), period = state.summaries.sunshine?.ytd;
+  panel.querySelector('.series-label').textContent = `${sunshineLabel().toUpperCase()} · TOTAL SUNSHINE`;
+  panel.querySelector('a').href = `sunshine.html?dataset=${$('#overview-sunshine-dataset').value}`;
+  field(panel, 'value', '—');
+  if (period?.value !== null && period) panel.querySelector('[data-field="value"]').replaceChildren(document.createTextNode(numeric(period.value)), element('span', 'h'));
+  field(panel, 'comparison', state.sunshineStatus || comparison(period, 'sunshine'));
+  field(panel, 'normal', period?.normal !== null && period ? `1991–2020 average: ${numeric(period.normal)} h${period.baselineCount !== 30 ? ` (${period.baselineCount} complete years)` : ''}` : '');
+  field(panel, 'rank', period?.complete ? `${period.tied ? 'Joint ' : ''}${ordinal(period.rankHigh)} sunniest of ${period.yearsCompared} years` : period ? 'Ranking unavailable' : '');
+  field(panel, 'archive', period?.complete ? `Archive: ${period.firstYear}–${period.lastYear}` : '');
+  field(panel, 'period', period ? `${periodText(period)} · ${period.count} of ${period.expected} months` : state.sunshine ? 'Monthly archive starts in 1910.' : '');
 }
 function renderSummary(kind) {
   const model = state.summaries[kind];
@@ -82,14 +99,16 @@ function renderMonthlyTable() {
   $('#monthly-rows').replaceChildren(...months.map((name, i) => {
     const cet = state.summaries.cet?.months[i];
     const ewp = state.summaries.ewp?.months[i];
+    const sunshine = state.summaries.sunshine?.months[i];
     const row = element('tr');
     const monthCell = element('th', name); monthCell.scope = 'row';
     const partial = [cet, ewp].filter(Boolean).some(period => new Date(Date.parse(period.end) + 86400000).getUTCDate() !== 1);
     if (partial) { monthCell.textContent += ' *'; monthCell.title = [cet && `CET through ${shortDate(cet.end)}`, ewp && `EWP through ${shortDate(ewp.end)}`].filter(Boolean).join('; '); }
-    const values = [metricValue(cet, 'cet'), cet?.delta !== null && cet ? `${signed(cet.delta)}°C` : '—', metricValue(ewp, 'ewp'), ewp?.percent !== null && ewp ? `${numeric(ewp.percent)}%` : '—'];
+    const values = [metricValue(cet, 'cet'), cet?.delta !== null && cet ? `${signed(cet.delta)}°C` : '—', metricValue(ewp, 'ewp'), ewp?.percent !== null && ewp ? `${numeric(ewp.percent)}%` : '—', metricValue(sunshine, 'sunshine'), sunshine?.percent !== null && sunshine ? `${numeric(sunshine.percent)}%` : '—'];
     row.append(monthCell, ...values.map(value => element('td', value)));
     return row;
   }));
+  $('#monthly-sunshine-heading').textContent = `Sunshine · ${sunshineLabel()}`;
 }
 
 function svgElement(tag, attributes = {}, text) {
@@ -103,7 +122,8 @@ function renderChart() {
   if (!container.clientWidth) return;
   const model = state.summaries[state.metric];
   const heat = state.metric === 'cet';
-  $('#chart-caption').textContent = `${heat ? 'CET departure from' : 'EWP as a percentage of'} 1991–2020.${model ? ` Latest month through ${shortDate(model.latest.iso)}.` : ''}`;
+  const sunshine = state.metric === 'sunshine';
+  $('#chart-caption').textContent = `${heat ? 'CET departure from' : sunshine ? `${sunshineLabel()} sunshine as a percentage of` : 'EWP as a percentage of'} 1991–2020.${model ? sunshine ? ` Confirmed months through ${monthDate(model.latest.month)}.` : ` Latest month through ${shortDate(model.latest.iso)}.` : sunshine ? ` ${state.sunshineStatus || 'No sunshine observations for this year.'}` : ''}`;
   const width = container.clientWidth, height = 285;
   const pad = { left: 45, right: 10, top: 27, bottom: 35 };
   const values = months.map((_, i) => {
@@ -116,7 +136,7 @@ function renderChart() {
   const y = value => pad.top + (max - value) / (max - min) * (height - pad.top - pad.bottom);
   const step = (width - pad.left - pad.right) / 12;
   const baseline = heat ? 0 : 100;
-  const svg = svgElement('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `${state.year} monthly ${heat ? 'temperature departures' : 'rainfall compared with average'}. Exact values are in Monthly figures.` });
+  const svg = svgElement('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `${state.year} monthly ${heat ? 'temperature departures' : sunshine ? `${sunshineLabel()} sunshine compared with average` : 'rainfall compared with average'}. Exact values are in Monthly figures.` });
   svg.append(svgElement('title', {}, `${state.year} month-by-month comparison`));
   for (const tick of [min, baseline, max]) {
     svg.append(svgElement('line', { x1: pad.left, x2: width - pad.right, y1: y(tick), y2: y(tick), class: tick === baseline ? 'reference-line' : 'grid-line' }));
@@ -142,46 +162,79 @@ function renderChart() {
 function render() {
   state.summaries = Object.fromEntries(['cet', 'ewp'].map(kind => [kind, state.archives[kind] ? summariseYear(state.archives[kind], state.year) : null]));
   const available = Object.values(state.summaries).filter(Boolean);
-  const ongoing = available.some(model => model.latest.iso.slice(5) !== '12-31');
+  state.summaries.sunshine = state.sunshine ? summariseSunshineYear(state.sunshine, state.year) : null;
+  const ongoing = available.some(model => model.latest.iso.slice(5) !== '12-31') || Boolean(state.summaries.sunshine && !state.summaries.sunshine.latest.month.endsWith('-12'));
   $('#overview-title').textContent = `${state.year} ${ongoing ? 'so far' : 'overview'}`;
   document.title = `${state.year} overview | Weather Site K`;
   $('#coverage').textContent = available.length === 2 && available[0].latest.iso === available[1].latest.iso
     ? `Observations through ${date(available[0].latest.iso)}`
     : ['cet', 'ewp'].map(kind => state.summaries[kind] ? `${kind === 'cet' ? 'CET' : 'EWP'} through ${date(state.summaries[kind].latest.iso)}` : `${kind.toUpperCase()}: no observations for this year`).join(' · ');
   $('#dashboard-content').hidden = false;
-  renderSummary('cet'); renderSummary('ewp'); renderHighlights(); renderMonthlyTable(); renderChart();
+  renderSummary('cet'); renderSummary('ewp'); renderSunshineSummary(); renderHighlights(); renderMonthlyTable(); renderChart();
 }
 
-async function loadData() {
-  const refresh = $('#refresh'); refresh.disabled = true;
-  $('#load-status').textContent = 'Loading server data…';
-  const sources = { cet: 'MeanTempCET.csv', ewp: 'PrecipitationEWP.csv', hei: 'hottest_days.json', fei: 'coldest_days.json' };
-  const results = await Promise.allSettled(Object.entries(sources).map(async ([kind, file]) => {
-    const response = await fetch(`${base}/data/${file}`, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`${kind.toUpperCase()} data unavailable (${response.status})`);
-    return kind === 'cet' || kind === 'ewp' ? createArchive(parseObservations(await response.text()), kind) : (await response.json()).records;
-  }));
-  state.archives = {}; state.annual = {};
-  const errors = [];
-  Object.keys(sources).forEach((kind, i) => {
-    const result = results[i];
-    if (result.status === 'fulfilled') {
-      if (kind === 'cet' || kind === 'ewp') state.archives[kind] = result.value;
-      else state.annual[kind] = result.value;
-    } else errors.push(`${kind.toUpperCase()}: ${result.reason.message}`);
-  });
-  const years = [...new Set(Object.values(state.archives).flatMap(archive => archive.availableYears))].sort((a, b) => b - a);
+function renderAvailableData() {
+  const years = [...new Set([...Object.values(state.archives).flatMap(archive => archive.availableYears), ...(state.sunshine?.records || []).map(row => Number(row.month.slice(0,4)))])].sort((a, b) => b - a);
   if (years.length) {
     if (!years.includes(state.year)) state.year = years[0];
     $('#overview-year').replaceChildren(...years.map(year => { const option = element('option', String(year)); option.value = year; return option; }));
     $('#overview-year').value = state.year; $('#overview-year').disabled = false;
     render();
   } else { $('#dashboard-content').hidden = true; $('#overview-year').disabled = true; $('#coverage').textContent = 'Observations unavailable'; }
+}
+async function fetchSunshine(dataset) {
+  const response = await fetch(`${base}/data/${dataset}.json`, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Sunshine data unavailable (${response.status}).`);
+  const data = await response.json();
+  if (data.dataset !== dataset || !data.records?.length) throw new Error('Sunshine data unavailable.');
+  return data;
+}
+async function loadSunshine() {
+  const request = ++state.sunshineRequest;
+  state.sunshine = null; state.sunshineStatus = 'Loading sunshine…';
+  if (state.year !== null) render();
+  try {
+    const data = await fetchSunshine($('#overview-sunshine-dataset').value);
+    if (request !== state.sunshineRequest) return;
+    state.sunshine = data; state.sunshineStatus = '';
+  } catch (error) {
+    if (request !== state.sunshineRequest) return;
+    state.sunshineStatus = `${error.message} Use Refresh data to retry.`;
+  }
+  renderAvailableData();
+}
+
+async function loadData() {
+  const refresh = $('#refresh'); refresh.disabled = true;
+  $('#overview-sunshine-dataset').disabled = true;
+  ++state.sunshineRequest;
+  $('#load-status').textContent = 'Loading server data…';
+  const sources = { cet: 'MeanTempCET.csv', ewp: 'PrecipitationEWP.csv', hei: 'hottest_days.json', fei: 'coldest_days.json', sunshine: $('#overview-sunshine-dataset').value };
+  const results = await Promise.allSettled(Object.entries(sources).map(async ([kind, file]) => {
+    if (kind === 'sunshine') return fetchSunshine(file);
+    const response = await fetch(`${base}/data/${file}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`${kind.toUpperCase()} data unavailable (${response.status})`);
+    return kind === 'cet' || kind === 'ewp' ? createArchive(parseObservations(await response.text()), kind) : (await response.json()).records;
+  }));
+  state.archives = {}; state.annual = {}; state.sunshine = null; state.sunshineStatus = '';
+  const errors = [];
+  Object.keys(sources).forEach((kind, i) => {
+    const result = results[i];
+    if (result.status === 'fulfilled') {
+      if (kind === 'cet' || kind === 'ewp') state.archives[kind] = result.value;
+      else if (kind === 'sunshine') state.sunshine = result.value;
+      else state.annual[kind] = result.value;
+    } else if (kind === 'sunshine') state.sunshineStatus = `${result.reason.message} Use Refresh data to retry.`;
+    else errors.push(`${kind.toUpperCase()}: ${result.reason.message}`);
+  });
+  renderAvailableData();
   $('#load-status').textContent = errors.length ? `${errors.join('. ')}. Use Refresh data to retry.` : '';
   refresh.disabled = false;
+  $('#overview-sunshine-dataset').disabled = false;
 }
 
 $('#refresh').addEventListener('click', loadData);
+$('#overview-sunshine-dataset').addEventListener('change', loadSunshine);
 $('#overview-year').addEventListener('change', event => { state.year = Number(event.target.value); render(); });
 document.querySelectorAll('[data-metric]').forEach(button => button.addEventListener('click', () => {
   state.metric = button.dataset.metric;
