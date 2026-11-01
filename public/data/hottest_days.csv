@@ -1,0 +1,153 @@
+Year,Date,Temperature,Location
+1875,16/08,30.1,Hillington
+1876,14/08,34.8,Cambridge Observatory
+1877,18/06,29.7,Strathfield Turgis
+1878,27/06,33.9,Llandudno
+1879,29/07,26.8,Hillington
+1880,04/09,30.8,Cambridge Observatory
+1881,15/07,35.0,London
+1882,06/08,29.2,Portsmouth
+1883,29/06,28.7,Norwood
+1884,11/08,33.9,Hillington
+1885,26/07,33.3,Southampton
+1886,04/07,31.9,Southampton
+1887,03/07,31.7,Cambridge Observatory
+1888,25/06,30.8,Cambridge Observatory
+1889,01/08,30.3,Regents Park
+1890,06/09,28.3,Llandovery
+1891,11/09,29.9,Loughborough
+1892,03/07,29.4,Cambridge Observatory
+1893,18/08,34.7,Wryde
+1894,01/07,30.6,Llandovery
+1895,25/06,30.6,Llandovery
+1896,14/07,31.2,Norwood
+1897,05/08,32.2,Bawtry
+1898,07/09,33.4,Norwood
+1899,25/08,32.4,Cambridge Observatory
+1900,20/07,35.1,Cambridge Observatory
+1901,19/07,33.3,Bawtry (South Yorks.)
+1902,28/06,31.9,Hereford
+1903,10/07,31.1,Wryde (Cambridgeshire)
+1904,04/08,32.2,Margate
+1905,14/07,30.0,Bawtry (South Yorks.)
+1906,01/09,35.6,Bawtry (South Yorks.)
+1907,16/07,30.0,Lairg
+1908,02/07,32.8,Dumfries
+1909,15/08,33.3,Epsom
+1910,20/06,28.9,Maidenhead
+1911,09/08,36.7,Raunds
+1912,12/07,32.8,Tottenham
+1913,16/06,29.4,New Malden (London)
+1914,01/07,32.2,Woking
+1915,08/06,32.2,Cromer
+1916,30/07,30.0,Woking
+1917,17/06,33.9,Reading
+1918,22/08,33.9,Canterbury
+1919,11/09,32.2,Raunds
+1920,17/06,27.8,Raunds
+1921,11/07,34.4,Woking
+1922,22/05,32.8,Camden Square
+1923,13/07,35.6,Camden Square
+1924,12/07,32.2,Camden Square
+1925,22/07,33.3,Hunstanton
+1926,19/09,32.2,Camden Square
+1927,16/06,29.4,Camden Square
+1928,15/07,32.8,Camden Square
+1929,31/08,32.2,Camden Square
+1930,29/08,34.4,Camden Square
+1931,14/06,28.3,Bromley
+1932,19/08,36.1,London (Camden)
+1933,27/07,34.4,Margate
+1934,11/07,33.3,Attenborough (Notts.)
+1935,13/07,33.3,Attenborough (Notts.)
+1936,20/06,31.7,Camden Square
+1937,07/08,33.3,Canterbury
+1938,01/08,30.6,Camden Square
+1939,07/06,32.2,Camden Square
+1940,09/06,32.8,Cranwell (Lincs.)
+1941,22/06,34.3,Camden Square
+1942,27/08,33.9,Sprowston (Norfolk)
+1943,31/07,33.9,Worcester
+1944,29/05,32.8,Tunbridge Wells
+1945,15/07,32.2,Norwich
+1946,02/07,30.6,London
+1947,03/06,34.4,Waddington (Lincs.)
+1948,28/07,35.0,Milford (Surrey)
+1949,12/07,33.3,Worcester
+1950,06/06,33.3,Camden Square
+1951,28/07,30.0,Southend
+1952,01/07,33.9,Jersey
+1953,12/08,33.9,Camden Square
+1954,01/09,30.6,Camden Square
+1955,21/08,32.8,Jersey
+1956,26/07,30.0,Camden Square
+1957,29/06,35.6,Camden Square
+1958,04/07,29.4,Paisley
+1959,05/07,34.4,Cromer
+1960,18/06,30.6,Wyton (Cambs.)
+1961,01/07,33.9,Regents Park
+1962,03/09,27.8,Writtle (Essex)
+1963,22/07,28.9,Littlehampton
+1964,26/08,32.8,Cromer
+1965,14/05,28.9,Kensington Palace
+1966,09/06,28.9,Southampton
+1967,17/07,30.2,Watnall (Notts.)
+1968,01/07,33.3,Camden Square
+1969,16/07,32.8,Letchworth (Herts.)
+1970,07/07,32.2,Aldenham (Herts.)
+1971,11/07,30.3,Rugby
+1972,20/07,29.4,Perth
+1973,14/08,32.1,Southampton
+1974,15/06,28.0,Southampton
+1975,08/08,34.2,Heathrow
+1976,03/07,35.9,Cheltenham
+1977,07/07,30.0,Paisley
+1978,04/06,28.8,Poolewe (Highland)
+1979,27/07,30.4,Benson (Ox.)
+1980,04/06,29.4,Cors Fochno (Dyfed)
+1981,05/08,29.5,Kew
+1982,03/08,30.7,Morley St. Botolph (Norf.)
+1983,15/07,33.0,East Bergholt (Suffolk)
+1984,20/08,31.9,St Louis (Jersey)
+1985,13/07,30.1,St Louis (Jersey)
+1986,28/06,32.0,Rustington (W. Sussex)
+1987,21/08,30.2,Liphook (Hants.)
+1988,07/08,30.2,Cheltenham (Glos.)
+1989,22/07,34.4,Mickleham (Surr.)
+1990,03/08,37.1,Cheltenham
+1991,11/07,32.1,Cromer (Norf.)
+1992,29/06,30.3,Malvern
+1993,04/07,29.7,East Bergholt (Suff.)
+1994,12/07,33.4,Morley St Botolph (Norfolk)
+1995,01/08,35.2,Boxworth (Cambs.)
+1996,22/07,33.2,Rickmansworth
+1997,10/08,33.1,Wellesbourne (Warks.)
+1998,10/08,32.2,Gravesend
+1999,01/08,32.7,Heathrow
+2000,19/06,32.6,Coltishall (Norfolk)
+2001,26/06,32.2,Northolt (London)
+2002,29/07,32.6,Northolt (London)
+2003,10/08,38.5,Brogdale near Faversham (Kent)
+2004,08/08,31.5,Northolt (London)
+2005,19/06,32.6,Heathrow
+2006,19/07,36.5,Wisley (Surrey)
+2007,05/08,30.1,Terrington St. Clement Wisbech (Norfolk)
+2008,28/07,30.2,Cambridge
+2009,30/06,31.8,Wisley (Surrey)
+2010,09/07,31.7,Gravesend
+2011,27/06,33.1,Gravesend
+2012,18/08,32.4,Cavendish (Suffolk)
+2013,01/08,34.1,Heathrow
+2014,18/07,32.3,Swancombe Marsh (Kent)
+2015,01/07,36.7,Heathrow
+2016,19/07,35.2,St Helier Jersey
+2017,21/06,34.5,Heathrow
+2018,27/07,35.6,Felsham (Suffolk)
+2019,25/07,38.7,Cambridge Botannical Gardens
+2020,31/07,37.8,Heathrow
+2021,21/07,32.2,Heathrow
+2022,19/07,40.3,Coningsby
+2023,10/09,33.5,Faversham
+2024,12/08,34.3,Cambridge
+2025,01/07,35.8,Faversham
+2026,13/08,38.2,Hartpury College

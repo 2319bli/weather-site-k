@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS state (
 );
 INSERT OR IGNORE INTO state(key, value) VALUES
   ('weather', '{"observed":{"cet":[],"ewp":[]},"forecast":{}}');
+INSERT OR IGNORE INTO state(key, value) VALUES
+  ('extremes-hei', '{}'), ('extremes-fei', '{}');
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash TEXT PRIMARY KEY,
   expires_at INTEGER NOT NULL

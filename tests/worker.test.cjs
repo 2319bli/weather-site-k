@@ -58,7 +58,7 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     const get = url => mf.dispatchFetch(origin + url, { headers: { Cookie: session }, redirect: 'manual' });
     const post = (url, body, extra = {}) => mf.dispatchFetch(origin + url, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: session, ...extra }, body: JSON.stringify(body), redirect: 'manual' });
     for (const route of ['/terminal', '/terminal.html', '/']) assert.equal((await get(route)).status, 303);
-    for (const route of ['/api/observed/update', '/api/forecast/update', '/api/terminal/save', '/api/presets']) assert.equal((await post(route, {})).status, 401);
+    for (const route of ['/api/observed/update', '/api/forecast/update', '/api/extremes/update', '/api/terminal/save', '/api/presets']) assert.equal((await post(route, {})).status, 401);
     assert.equal((await get('/api/terminal/saved?terminal=0')).status, 401);
     assert.equal((await post('/api/login', { password: 'integration-test-only' }, { Origin: 'https://evil.test' })).status, 403);
     assert.equal((await post('/api/login', { password: 'wrong' })).status, 401);
@@ -70,6 +70,23 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     const page = await get('/terminal.html');
     assert.equal(page.status, 200);
     assert.ok((await page.text()).includes('id="terminal-input"'));
+    for (const [dataset, file] of [['hei', 'hottest_days.json'], ['fei', 'coldest_days.json']]) {
+      const originalResponse = await get('/data/' + file);
+      assert.equal(originalResponse.headers.get('Access-Control-Allow-Origin'), '*');
+      const original = await originalResponse.json();
+      assert.equal(original.records.length, 152);
+      const records = [{ iso: dataset === 'hei' ? '2026-07-01' : '2026-12-30', temperature: dataset === 'hei' ? 40.2 : -25, location: 'Local test station' }];
+      const update = { dataset, version: original.version, records };
+      assert.equal((await post('/api/extremes/update', update, { Origin: 'https://evil.test' })).status, 403);
+      const results = await Promise.all([post('/api/extremes/update', update), post('/api/extremes/update', update)]);
+      assert.deepEqual(results.map(result => result.status).sort(), [200, 409]);
+      const current = await (await get('/data/' + file)).json();
+      assert.equal(current.version, original.version + 1);
+      assert.equal(current.records.length, original.records.length);
+      assert.deepEqual(current.records.slice(0, -1), original.records.slice(0, -1));
+      assert.equal(current.records.at(-1).iso, records[0].iso);
+      assert.equal((await post('/api/extremes/update', { ...update, version: current.version, records: [{ ...records[0], iso: '2027-02-29' }] })).status, 400);
+    }
     assert.equal((await post('/api/terminal/save', { terminal: 1, entries: [{ input: 'dat cet', response: 'saved' }] })).status, 200);
     assert.deepEqual((await (await get('/api/terminal/saved?terminal=1')).json()).entries, [{ input: 'dat cet', response: 'saved' }]);
     assert.equal((await post('/api/presets', { presets: { spring: 'rank table cet year high 10' } })).status, 200);

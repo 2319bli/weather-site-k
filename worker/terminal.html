@@ -437,6 +437,16 @@
 Commands:
 dat cet
 dat ewp
+dat hei
+dat fei
+view hei 2026
+upd hei "
+13/08/2026 38.2 Hartpury College
+"
+upd fei "
+06/01/2026 -12.5 Marham (Norfolk)
+"
+confirm
 save
 savevis spring
 run spring
@@ -462,7 +472,7 @@ upd "
                 <div class="terminal-actions">
                     <button type="submit">Run</button>
                     <button type="button" class="secondary" id="clear-output">Clear</button>
-                    <span class="terminal-help">After a valid <code>upd</code>, type <code>confirm</code> to apply it.</span>
+                    <span class="terminal-help">After <code>upd</code>, type <code>confirm</code>. <code>upd hei/fei</code> replaces the annual record for each supplied year.</span>
                 </div>
             </form>
         </section>
@@ -497,6 +507,16 @@ upd "
 Commands:
 dat cet
 dat ewp
+dat hei
+dat fei
+view hei 2026
+upd hei "
+13/08/2026 38.2 Hartpury College
+"
+upd fei "
+06/01/2026 -12.5 Marham (Norfolk)
+"
+confirm
 save
 savevis spring
 run spring
@@ -1132,9 +1152,52 @@ upd "
                 }
             }
 
+            async function handleExtremeCommand(command) {
+                const match = /^(dat|view|upd)\s+(hei|fei)\b\s*([\s\S]*)$/i.exec(command);
+                if (!match) return null;
+                const action = match[1].toLowerCase();
+                const dataset = match[2].toLowerCase();
+                const file = dataset === "hei" ? "hottest_days.json" : "coldest_days.json";
+                const data = await requestJson(`/data/${file}`);
+                const format = record => `${displayDate(record.iso)}  ${record.temperature}°C  ${record.location}`;
+                if (action === "dat") return `${dataset.toUpperCase()}: ${format(data.records.at(-1))}`;
+                if (action === "view") {
+                    if (!/^\d{4}$/.test(match[3].trim())) return "Use view hei YYYY or view fei YYYY.";
+                    const record = data.records.find(row => row.year === Number(match[3]));
+                    return record ? format(record) : "No annual record for that year.";
+                }
+                const lines = linesFromBody(stripOptionalQuotes(match[3]));
+                if (!lines.length) return "Expected: full date, temperature and location.";
+                const records = [];
+                const seen = new Set();
+                for (const line of lines) {
+                    const parsed = /^(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})\s+(-?\d+(?:\.\d+)?)\s+(.+)$/.exec(line);
+                    const date = parsed && parseUserDate(parsed[1]);
+                    if (!date) return "Each line needs a valid full date, temperature and location.";
+                    const year = date.getUTCFullYear();
+                    if (seen.has(year)) return `Supply one annual record per year: ${year}.`;
+                    seen.add(year);
+                    records.push({ year, iso: isoFromDate(date), temperature: Number(parsed[2]), location: parsed[3].trim() });
+                }
+                currentTerminal().pendingUpdate = { kind: "extreme", dataset, version: data.version, records };
+                const preview = records.map(record => {
+                    const old = data.records.find(row => row.year === record.year);
+                    return `${record.year}: ${old ? "replace " + format(old) : "add annual record"}\nWith: ${format(record)}`;
+                }).join("\n\n");
+                return `${dataset.toUpperCase()} annual records\n${preview}\nType confirm to apply, or cancel.`;
+            }
+
             async function applyPendingUpdate() {
                 const terminal = currentTerminal();
                 if (!terminal.pendingUpdate) return invalid();
+                if (terminal.pendingUpdate.kind === "extreme") {
+                    try {
+                        const pending = terminal.pendingUpdate;
+                        const data = await requestJson("/api/extremes/update", { method: "POST", body: pending });
+                        terminal.pendingUpdate = null;
+                        return `${pending.dataset.toUpperCase()} updated: ${data.updated} annual record${data.updated === 1 ? "" : "s"}. Refresh the index page to see the change.`;
+                    } catch (error) { return `Request failed: ${error.message}`; }
+                }
                 try {
                     await requestJson("/api/forecast/update", {
                         method: "POST",
@@ -1175,8 +1238,10 @@ upd "
                 if (listVisualResponse !== null) return listVisualResponse;
                 const deleteVisualResponse = await handleDeleteVisual(command);
                 if (deleteVisualResponse !== null) return deleteVisualResponse;
-                await ensureData();
+                const extremeResponse = await handleExtremeCommand(command);
+                if (extremeResponse !== null) return extremeResponse;
 
+                if (/^run\b/i.test(command)) await ensureData();
                 const runVisualResponse = handleRunVisual(command);
                 if (runVisualResponse !== null) return runVisualResponse;
                 if (/^confirm$/i.test(command)) return applyPendingUpdate();
@@ -1186,6 +1251,7 @@ upd "
                     return "Update cancelled.";
                 }
 
+                await ensureData();
                 return handleDat(command) ||
                     handleView(command) ||
                     handleRank(command) ||

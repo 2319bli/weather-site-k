@@ -25,7 +25,7 @@ class Page(HTMLParser):
             assert target.is_relative_to(ROOT), f'URL escapes published site: {value}'
             assert target.is_file(), f'Missing asset: {self.path.name}: {value}'
         if tag == 'script':
-            self.inline_script = 'src' not in attrs
+            self.inline_script = 'src' not in attrs and attrs.get('type') != 'application/json'
 
     def handle_data(self, data):
         if self.inline_script:
@@ -45,8 +45,8 @@ with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / f'{page.stem}-{index}.js'
             path.write_text(script)
             subprocess.run(['node', '--check', str(path)], check=True)
-for script in ROOT.glob('*.js'):
+for script in [*ROOT.glob('*.js'), *ROOT.glob('*.mjs')]:
     subprocess.run(['node', '--check', str(script)], check=True)
-for data in ['MeanTempCET.csv', 'PrecipitationEWP.csv', 'forecast_2026.csv']:
+for data in ['MeanTempCET.csv', 'PrecipitationEWP.csv', 'forecast_2026.csv', 'hottest_days.csv', 'coldest_days.csv']:
     assert (ROOT / 'data' / data).is_file()
 print('PASS: original pages, local assets, data paths and inline JavaScript syntax')

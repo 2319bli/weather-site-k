@@ -3,6 +3,7 @@ import loginHtml from './login.html';
 import baseline from './baseline.json';
 import { cookie, digest, sessionHash, SESSION_SECONDS, verifyPassword } from './auth.mjs';
 import { DATA_FILES, applyUpdates, csvText, forecastRows, validateUpdates } from './data.mjs';
+import { EXTREME_FILES, EXTREME_URLS, mergeRecords, parseExtremeCsv, validateRecords } from '../public/extremes.mjs';
 
 const securityHeaders = {
   'Cache-Control': 'no-store',
@@ -99,11 +100,38 @@ function terminalIndex(value) {
   if (!['0', '1', '2'].includes(String(value))) throw new Error('Terminal must be 0, 1 or 2.');
   return Number(value);
 }
+async function readExtremes(env, dataset) {
+  const [original, state] = await Promise.all([
+    originalCsv(env, EXTREME_FILES[dataset]), readState(env, `extremes-${dataset}`)
+  ]);
+  return { records: mergeRecords(parseExtremeCsv(original), state ? JSON.parse(state.value) : {}), version: state?.version || 0 };
+}
+async function updateExtremes(request, env) {
+  const body = await bodyJson(request);
+  if (!['hei', 'fei'].includes(body.dataset)) return json({ error: 'Dataset must be hei or fei.' }, 400);
+  if (!Number.isSafeInteger(body.version) || body.version < 0) return json({ error: 'Supply the record version shown in the preview.' }, 400);
+  const records = validateRecords(body.records);
+  const key = `extremes-${body.dataset}`;
+  const before = await readState(env, key);
+  if (!before || before.version !== body.version) return json({ error: 'Records changed in another session. Run upd again to review the latest records.' }, 409);
+  const overrides = JSON.parse(before.value);
+  for (const record of records) overrides[record.year] = record;
+  const result = await env.DB.prepare('UPDATE state SET value=?,version=version+1 WHERE key=? AND version=?')
+    .bind(JSON.stringify(overrides), key, body.version).run();
+  if (result.meta.changes !== 1) return json({ error: 'Records changed in another session. Run upd again to review the latest records.' }, 409);
+  return json({ updated: records.length, version: body.version + 1 });
+}
 async function route(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
   const now = Math.floor(Date.now() / 1000);
   if (request.method === 'POST' && request.headers.get('Origin') !== url.origin) return json({ error: 'Invalid request origin.' }, 403);
+  const extreme = Object.keys(EXTREME_URLS).find(key => path === `/data/${EXTREME_URLS[key]}`);
+  if (extreme && ['GET', 'HEAD'].includes(request.method)) {
+    const data = await readExtremes(env, extreme);
+    return response(request.method === 'HEAD' ? null : JSON.stringify(data), 200,
+      { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
+  }
   const dataset = Object.keys(DATA_FILES).find(key => path === `/data/${DATA_FILES[key]}`);
   if (dataset && ['GET', 'HEAD'].includes(request.method)) {
     const [original, state] = await Promise.all([originalCsv(env, DATA_FILES[dataset]), readState(env, 'weather')]);
@@ -124,6 +152,7 @@ async function route(request, env) {
     }
     if (path === '/api/observed/update' && request.method === 'POST') return updateWeather(request, env, false);
     if (path === '/api/forecast/update' && request.method === 'POST') return updateWeather(request, env, true);
+    if (path === '/api/extremes/update' && request.method === 'POST') return updateExtremes(request, env);
     if (path === '/api/terminal/saved' && request.method === 'GET') {
       const row = await readState(env, `terminal-${terminalIndex(url.searchParams.get('terminal'))}`);
       return json({ entries: row ? JSON.parse(row.value) : [] });

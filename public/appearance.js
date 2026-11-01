@@ -29,8 +29,7 @@
       new MutationObserver(() => contrastYearLabels(list)).observe(list, {childList: true});
       contrastYearLabels(list);
     });
-    // The exported HEI/FEI charts have a fixed 1400px layout. Fit their existing
-    // traces to the available panel; the original data and plotting scripts stay intact.
+    // Fit HEI/FEI charts to the panel, including after their server data arrives.
     const charts = [...document.querySelectorAll('.plotly-graph-div')];
     const widths = new WeakMap();
     const originalLayouts = new WeakMap();
@@ -66,6 +65,10 @@
       const observer = new ResizeObserver(resize);
       charts.forEach(chart => observer.observe(chart));
       window.addEventListener('load', resize, {once:true});
+      window.addEventListener('weather:chart-ready', () => {
+        charts.forEach(chart => { widths.delete(chart); originalLayouts.delete(chart); });
+        resize();
+      });
       resize();
     }
   });
