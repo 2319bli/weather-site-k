@@ -96,20 +96,22 @@ async function renderIndividual() {
   const years = individualPicker.update(available, Number(latest.slice(0,4)));
   const series = years.map(year => ({year, colour: individualPicker.colour(year), rows: sunshineBreakdown(data, state.kind, year)}));
   const rows = series.flatMap(series => series.rows);
+  const style = getComputedStyle(document.documentElement), color = name => style.getPropertyValue(name).trim();
+  const average = individualPicker.averageEnabled() ? window.IndividualComparison.averageSeries(year => sunshineBreakdown(data, state.kind, year), color('--text-body')) : null;
   const labels = series[0].rows.map(row => state.kind === 'months' ? row.label.slice(0,3) : row.label.split(' (')[0]);
   const kindLabel = { months: 'Monthly', seasons: 'Seasonal', hex: 'Hex-season' }[state.kind];
   $('comparison-window').textContent = `${data.label} · ${kindLabel} totals. ${series.map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}.${state.kind === 'seasons' ? ' Winter includes the preceding December.' : ''}${rows.some(row => row.count && !row.complete) ? ' Hatched bars show incomplete totals.' : ''}${rows.some(row => !row.count) ? ' Periods without observations are left blank.' : ''}`;
-  $('sunshine-individual-caption').textContent = `${data.label} · ${years.join(', ')} · ${kindLabel} sunshine totals`;
+  if (average) { series.push(average); $('comparison-window').textContent += ` ${window.IndividualComparison.averageNote(average)}`; }
+  $('sunshine-individual-caption').textContent = `${data.label} · ${series.map(series => series.year).join(', ')} · ${kindLabel} sunshine totals`;
   const tableRows = labels.flatMap((_,i) => series.map(({rows}) => rows[i]));
   $('sunshine-individual-rows').replaceChildren(...tableRows.map(row => {
     const tr = document.createElement('tr');
-    for (const text of [row.label, row.year, row.value === null ? '—' : row.value.toFixed(1), `${row.count}/${row.expected} months${row.complete ? '' : row.count ? ' · incomplete' : ' · no observations'}`]) {
+    for (const text of [row.label, row.year, row.value === null ? '—' : row.value.toFixed(1), row.average ? `${row.years}/30 complete years` : `${row.count}/${row.expected} months${row.complete ? '' : row.count ? ' · incomplete' : ' · no observations'}`]) {
       const td = document.createElement('td'); td.textContent = text; tr.append(td);
     }
     return tr;
   }));
   $('sunshine-chart').hidden = false;
-  const style = getComputedStyle(document.documentElement), color = name => style.getPropertyValue(name).trim();
   if (!window.Plotly) throw new Error('The chart library could not load. Refresh to try again.');
   await Plotly.react($('sunshine-chart'), window.IndividualComparison.traces(series, 'sunshine', labels, monthName), {
     autosize: true, paper_bgcolor: color('--panel-bg'), plot_bgcolor: color('--panel-bg'),

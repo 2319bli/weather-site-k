@@ -36,6 +36,8 @@ On temperature, rainfall and sunshine, the Months, Seasons and Hex seasons tabs 
 
 Rainfall and sunshine use grouped bars for each period’s separate total, with one bar per selected year. Temperature uses a separate line for each year’s period mean CET, weighted by observed days rather than an average of monthly means. Forecasts and projections are excluded. Winter includes the preceding December and is labelled by its January/February year; leap days are included. Sunshine preserves published seasonal totals when available. Hatched bars or hollow temperature markers identify incomplete periods, while missing periods stay blank rather than becoming zero. An expandable table gives each year’s values and coverage, grouped by period. Existing cumulative, daily and historical modes remain available.
 
+The **1991–2020 average** checkbox adds a reference bar (rainfall/sunshine) or dashed line (temperature) without using a year slot. It averages the 30 complete period values, giving each year equal weight. Each temperature period first uses its daily-weighted mean; sunshine uses the selected region and retains published seasonal totals. Winter 1991 includes December 1990. A reference value is blank if any of the 30 periods is incomplete. The checkbox stays selected across period and sunshine region changes, and reference values and coverage appear in the table.
+
 ### Historical comparison to date
 
 On either page, historical comparison defaults to **Full period**. Choose **Year to date** in the annual tab to compare 1 January through that dataset's latest observed date in every year. The latest year gets a separate marker and rank. CET and EWP use their own observation cutoffs. The setting is remembered separately for each period tab during the visit.

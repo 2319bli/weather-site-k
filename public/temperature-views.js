@@ -192,8 +192,11 @@
                 if (!individualPicker) { summary.textContent = 'Refresh the page to load the year comparison controls.'; return; }
                 const available = [...new Set(A.periods(currentView).flatMap(period => A.years(archive, period)))].sort((a,b) => b-a);
                 const years = individualPicker.update(available, Number(archive.latest?.slice(0, 4)));
-                const series = years.map(year => ({ year, colour: individualPicker.colour(year), rows: A.breakdown(archive, currentView, year, rainfall ? 'total' : 'mean') }));
+                const breakdown = year => A.breakdown(archive, currentView, year, rainfall ? 'total' : 'mean');
+                const series = years.map(year => ({ year, colour: individualPicker.colour(year), rows: breakdown(year) }));
                 const rows = series.flatMap(series => series.rows);
+                const average = individualPicker.averageEnabled() ? window.IndividualComparison.averageSeries(breakdown, getComputedStyle(document.documentElement).getPropertyValue('--text-body').trim()) : null;
+                if (average) series.push(average);
                 const categories = series[0].rows.map(row => row.label);
                 const labels = { months: 'Monthly', seasons: 'Seasonal', 'hex-seasons': 'Hex-season' };
                 const traces = window.IndividualComparison.traces(series, kind, categories, dateLabel);
@@ -201,12 +204,13 @@
                     type: 'category', categoryorder: 'array', categoryarray: categories, tickangle: 0,
                     tickfont: { size: mobile.matches ? 9 : 12 }
                 }, rainfall ? 'Total rainfall (mm)' : 'Mean temperature (°C)');
-                summary.textContent = `${series.map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}. Observations only.${currentView === 'seasons' ? ' Winter includes the preceding December.' : ''}`;
+                summary.textContent = `${series.filter(series => !series.average).map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}. Observations only.${currentView === 'seasons' ? ' Winter includes the preceding December.' : ''}`;
+                if (average) summary.textContent += ` ${window.IndividualComparison.averageNote(average)}`;
                 if (rows.some(row => row.days && !row.complete)) summary.textContent += rainfall
                     ? ' Hatched bars show incomplete totals.' : ' Hollow diamonds show means for incomplete periods.';
                 if (rows.some(row => !row.days)) summary.textContent += ' Periods without observations are left blank.';
                 const tableRows = categories.flatMap((_,i) => series.map(({rows}) => rows[i]));
-                extra.innerHTML = `<details><summary>Individual values · ${years.join(', ')}</summary>${table(['Period', 'Year', rainfall ? 'Total rainfall' : 'Mean CET', 'Observed days', 'Date range'], tableRows.map(row => [row.label, row.year, format(row.value), `${row.days}/${row.expected}${row.complete ? '' : row.days ? ' · incomplete' : ' · no observations'}`, `${dateLabel(row.start)} – ${dateLabel(row.end)}`]), 'Selected years period breakdown')}</details>`;
+                extra.innerHTML = `<details><summary>Individual values · ${series.map(series => series.year).join(', ')}</summary>${table(['Period', 'Year / reference', rainfall ? 'Total rainfall' : 'Mean CET', 'Coverage', 'Date range'], tableRows.map(row => [row.label, row.year, format(row.value), row.average ? `${row.years}/30 complete years` : `${row.days}/${row.expected} days${row.complete ? '' : row.days ? ' · incomplete' : ' · no observations'}`, row.average ? '1991–2020' : `${dateLabel(row.start)} – ${dateLabel(row.end)}`]), 'Selected years period breakdown')}</details>`;
             }
 
             return {

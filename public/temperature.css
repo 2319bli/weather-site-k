@@ -39,6 +39,8 @@ body:is([data-temperature-mode="individual"], [data-rainfall-mode="individual"])
 .individual-controls select, .individual-controls button { padding: 7px 11px; border: 1px solid var(--panel-border); border-radius: 4px; background: var(--panel-bg); color: var(--heading); }
 .individual-controls button:disabled, .individual-controls select:disabled { opacity: .45; cursor: default; }
 .individual-controls .hint { margin: 0; }
+.individual-controls .individual-average { gap: 6px; cursor: pointer; }
+.individual-average input { margin: 0; accent-color: var(--nav-active-line); }
 .individual-years { flex-wrap: wrap; list-style: none; padding: 0; margin: 12px 0 0; }
 .individual-years li { padding: 4px 7px 4px 10px; border: 1px solid var(--panel-border); border-radius: 5px; background: var(--panel-bg); color: var(--heading); font-weight: 600; }
 .individual-years .year-swatch { width: 10px; height: 10px; border-radius: 50%; }
