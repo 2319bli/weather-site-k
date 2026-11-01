@@ -58,7 +58,7 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     const get = url => mf.dispatchFetch(origin + url, { headers: { Cookie: session }, redirect: 'manual' });
     const post = (url, body, extra = {}) => mf.dispatchFetch(origin + url, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: session, ...extra }, body: JSON.stringify(body), redirect: 'manual' });
     for (const route of ['/terminal', '/terminal.html', '/']) assert.equal((await get(route)).status, 303);
-    for (const route of ['/api/observed/update', '/api/forecast/update', '/api/extremes/update', '/api/terminal/save', '/api/presets']) assert.equal((await post(route, {})).status, 401);
+    for (const route of ['/api/observed/update', '/api/forecast/update', '/api/extremes/update', '/api/sunshine/update', '/api/terminal/save', '/api/presets']) assert.equal((await post(route, {})).status, 401);
     assert.equal((await get('/api/terminal/saved?terminal=0')).status, 401);
     assert.equal((await post('/api/login', { password: 'integration-test-only' }, { Origin: 'https://evil.test' })).status, 403);
     assert.equal((await post('/api/login', { password: 'wrong' })).status, 401);
@@ -87,6 +87,48 @@ test('Worker protects all admin routes and persists shared updates', async () =>
       assert.equal(current.records.at(-1).iso, records[0].iso);
       assert.equal((await post('/api/extremes/update', { ...update, version: current.version, records: [{ ...records[0], iso: '2027-02-29' }] })).status, 400);
     }
+    for (const dataset of ['sunuk','suneng','suneaw','sunmid']) {
+      const originalResponse = await mf.dispatchFetch(origin + `/data/${dataset}.json`);
+      assert.equal(originalResponse.status,200);
+      assert.equal(originalResponse.headers.get('Access-Control-Allow-Origin'),'*');
+      const original = await originalResponse.json();
+      assert.equal(original.records.length,1401);
+      assert.equal(original.records.at(-1).month,'2026-09');
+      const update = { dataset, version:original.version, updates:[{month:'2026-10',value:86.3}] };
+      assert.equal((await post('/api/sunshine/update',update,{Origin:'https://evil.test'})).status,403);
+      const results = await Promise.all([post('/api/sunshine/update',update),post('/api/sunshine/update',update)]);
+      assert.deepEqual(results.map(r => r.status).sort(),[200,409]);
+      const current = await (await get(`/data/${dataset}.json`)).json();
+      assert.equal(current.version,original.version+1);
+      assert.deepEqual(current.records.slice(0,-1),original.records);
+      assert.deepEqual(current.records.at(-1),{month:'2026-10',value:86.3});
+      assert.deepEqual(current.published,original.published);
+      for (const row of [{month:'2026-11',value:-1},{month:'2026-12',value:1},{month:'2026-13',value:1},{month:'2026-10',value:1}]) {
+        assert.equal((await post('/api/sunshine/update',{...update,version:current.version,updates:[row]})).status,400);
+      }
+      const head = await mf.dispatchFetch(origin + `/data/${dataset}.json`,{method:'HEAD'});
+      assert.equal(head.status,200); assert.equal(await head.text(),'');
+    }
+    assert.equal((await post('/api/sunshine/update',{dataset:'constructor',version:0,updates:[]})).status,400);
+    assert.equal((await post('/api/sunshine/update',{dataset:'sunuk',updates:[]})).status,400);
+    // Exercise the actual terminal handler against the isolated Worker database.
+    const terminalSource = fs.readFileSync(path.join(root,'worker/terminal.html'),'utf8');
+    const handlerSource = terminalSource.slice(terminalSource.indexOf('async function handleSunshineCommand'),terminalSource.indexOf('async function handleExtremeCommand')).trim().replace("await import('./sunshine-data.mjs')",'sunshineModule');
+    const requestJson = async (url, options) => {
+      const response = options?.method === 'POST' ? await post(url,options.body) : await get(url);
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error);
+      return body;
+    };
+    const handler = new Function('requestJson','sunshineModule','return '+handlerSource)(requestJson,await import('../public/sunshine-data.mjs'));
+    assert.match(await handler('dat sunuk'),/2026-10 86.3 hours/);
+    assert.match(await handler('conf sunuk "2026-11 42.1"'),/updated: 1 month.*2026-11 42.1 hours/);
+    assert.match(await handler('conf sunuk "2026-11 42.1"'),/Expected 2026-12/);
+    assert.match(await handler('dat suneng'),/2026-10 86.3 hours/);
+    assert.match(await handler('conf sunmid "2026-13 9"'),/valid month/);
+    assert.equal(await handler('dat cet'),null);
+    assert.equal((await get('/sunshine-data.mjs')).status,200);
+    assert.equal((await get('/sunshine.html')).headers.get('Location'),'https://2319bli.github.io/weather-site-k/sunshine.html');
     assert.equal((await post('/api/terminal/save', { terminal: 1, entries: [{ input: 'dat cet', response: 'saved' }] })).status, 200);
     assert.deepEqual((await (await get('/api/terminal/saved?terminal=1')).json()).entries, [{ input: 'dat cet', response: 'saved' }]);
     assert.equal((await post('/api/presets', { presets: { spring: 'rank table cet year high 10' } })).status, 200);

@@ -4,7 +4,7 @@ Public site: https://2319bli.github.io/weather-site-k/
 
 Admin terminal: https://weather-site-k-admin.2319bli.workers.dev/terminal.html
 
-The public pages run on GitHub Pages. A Cloudflare Worker serves the password-protected terminal and live CSV data; Cloudflare D1 stores weather updates, three saved terminal sessions, visual presets and expiring login sessions. The homepage overview and all five chart pages read server data when loaded or refreshed. The original temperature charts are at `temperature.html`; `index.html` is the overview. The heat and freeze indices use their separate annual hottest/coldest records, including location, rather than daily mean CET.
+The public pages run on GitHub Pages. A Cloudflare Worker serves the password-protected terminal and live CSV data; Cloudflare D1 stores weather updates, three saved terminal sessions, visual presets and expiring login sessions. The homepage overview and all six chart pages read server data when loaded or refreshed. The original temperature charts are at `temperature.html`; `index.html` is the overview. The heat and freeze indices use their separate annual hottest/coldest records, including location, rather than daily mean CET.
 
 The existing chart calculations and mixed ISO/day-first date parsers are preserved. The historical CSV files in `public/data/` are an unchanged baseline. The Worker appends confirmed observations to that baseline when serving data, overlays forecast updates, and removes forecasts at or before the latest confirmed CET date. New observations must start one day after the latest observation. Annual extreme records are seeded from the unchanged `hottest_days.csv` and `coldest_days.csv` files; D1 stores replacements by year. Their charts, hover details, top-ten tables and year ranges are calculated from those shared records, using the original HEI = Σ(temperature − 27°C) and FEI = Σ(−temperature − 8°C) formulas. Concurrent weather edits are rejected rather than overwritten.
 
@@ -35,6 +35,16 @@ On either page, historical comparison defaults to **Full period**. Choose **Year
 The other tabs call this **Period to date**: the selected month, season or hex-season is clipped to the observation cutoff in the reference year. Finished periods use their complete window; future periods show an explicit empty state. Winter includes the preceding December, and a December cutoff belongs to the winter ending the following year. Each comparison displays its date window and day count.
 
 To-date comparisons exclude 29 February from every year, so all years use the same calendar dates. Years with missing observations are shown separately and unranked; an entirely missing period is not zero rainfall. Forecasts and projections are excluded. Full-period statistics and cumulative charts retain their original treatment of leap days and their original values.
+
+## Sunshine
+
+`sunshine.html` compares sunshine totals in hours across all years from 1910, with annual, monthly, seasonal and hex-seasonal periods. The dataset selector offers UK wide, England, England and Wales, and Midlands. There is only historical comparison because these sources contain monthly totals. Full-period comparisons mark incomplete years separately and leave them unranked; year/period-to-date compares the same available months in every year. Rankings share ties. A values table, sunniest/dullest highlights and a 1991–2020 average accompany the chart.
+
+The baseline files in `public/data/sunshine/` are unchanged copies of the Met Office HadUK-Grid [UK](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/UK.txt), [England](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/England.txt), [England and Wales](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/England_and_Wales.txt) and [Midlands](https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Midlands.txt) files, updated 1 October 2026 and containing monthly observations through September 2026. Fixed-width parsing preserves blank future months and missing aggregates. Published complete annual/seasonal totals are retained; hex-season totals and newly completed periods sum the rounded monthly values. Winter uses the preceding December. Small rounding differences from published aggregates are expected.
+
+Each region has separate D1 state, served publicly at `/data/sunuk.json`, `/data/suneng.json`, `/data/suneaw.json` and `/data/sunmid.json`. Refreshing the page reads the current server data. Sources are fixed baselines; later confirmations are stored on the server rather than automatically fetched from Met Office.
+
+Use `dat sunuk`, `dat suneng`, `dat suneaw` or `dat sunmid` to inspect the latest confirmed month. Confirm the next month with, for example, `conf sunuk "2026-10 86.3"` (illustrative value only). Replace `sunuk` with `suneng`, `suneaw` or `sunmid` for the other regions. Each line is `YYYY-MM hours`; quoted multiline input is supported. Commands save immediately, like `conf cet`, and require consecutive months following the latest observation. Existing months cannot be overwritten. Invalid months, negative/non-numeric values, totals exceeding the month's hours and stale concurrent edits are rejected. No example values are written to production by deployment.
 
 ## Terminal
 
@@ -98,3 +108,5 @@ To-date tests cover differing observation cutoffs, both directions of leap-year 
 ## Branding and colour schemes
 
 The K mark in `public/logo.svg` is the site logo and favicon. Colour schemes are Daybreak, Midnight, Terracotta, Aurora, Atlantic, Eclipse, Amethyst, Meadow and Ember. Atlantic is the default; saved choices retain their existing palette IDs.
+
+Sunshine tests verify every imported monthly cell and published aggregate, period totals, fixed-width missing columns, ties, incomplete periods, matching-month comparisons, winter rollover, strict monthly command syntax, region isolation, authentication, CSRF and concurrent updates. Terminal-handler integration tests use an isolated database.

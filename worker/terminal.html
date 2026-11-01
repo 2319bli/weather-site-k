@@ -413,6 +413,7 @@
         <a href="index.html">Overview</a>
         <a href="temperature.html">Temperature</a>
         <a href="ewp.html">Rainfall</a>
+        <a href="sunshine.html">Sunshine</a>
         <a href="threshold.html">Thresholds</a>
         <a href="hei.html">Heat index</a>
         <a href="fei.html">Freeze index</a>
@@ -440,6 +441,13 @@ dat cet
 dat ewp
 dat hei
 dat fei
+dat sunuk
+dat suneng
+dat suneaw
+dat sunmid
+conf sunuk "2026-10 86.3"
+Sunshine: sunuk (UK), suneng (England), suneaw (England and Wales), sunmid (Midlands).
+Use YYYY-MM and hours; conf saves the next month immediately.
 view hei 2026
 upd hei "
 13/08/2026 38.2 Hartpury College
@@ -510,6 +518,13 @@ dat cet
 dat ewp
 dat hei
 dat fei
+dat sunuk
+dat suneng
+dat suneaw
+dat sunmid
+conf sunuk "2026-10 86.3"
+Sunshine: sunuk (UK), suneng (England), suneaw (England and Wales), sunmid (Midlands).
+Use YYYY-MM and hours; conf saves the next month immediately.
 view hei 2026
 upd hei "
 13/08/2026 38.2 Hartpury College
@@ -1153,6 +1168,26 @@ upd "
                 }
             }
 
+            async function handleSunshineCommand(command) {
+                if (!/^(dat|conf)\s+sun\w*\b/i.test(command)) return null;
+                const { parseSunshineCommand, appendSunshine, SUNSHINE } = await import('./sunshine-data.mjs');
+                try {
+                    const parsed = parseSunshineCommand(command);
+                    if (!parsed) return 'Use sunuk, suneng, suneaw or sunmid for sunshine.';
+                    const data = await requestJson(`/data/${parsed.dataset}.json`);
+                    const label = `${SUNSHINE[parsed.dataset].label} sunshine`;
+                    if (parsed.action === 'dat') {
+                        const row = data.records.at(-1);
+                        return `${label}: ${row.month} ${row.value.toFixed(1)} hours`;
+                    }
+                    appendSunshine(data.records, parsed.updates);
+                    const result = await requestJson('/api/sunshine/update', {
+                        method: 'POST', body: { dataset: parsed.dataset, version: data.version, updates: parsed.updates }
+                    });
+                    return `${label} updated: ${result.updated} month${result.updated === 1 ? '' : 's'}. Latest: ${result.latest.month} ${result.latest.value.toFixed(1)} hours.`;
+                } catch (error) { return `Sunshine update: ${error.message}`; }
+            }
+
             async function handleExtremeCommand(command) {
                 const match = /^(dat|view|upd)\s+(hei|fei)\b\s*([\s\S]*)$/i.exec(command);
                 if (!match) return null;
@@ -1241,6 +1276,8 @@ upd "
                 if (deleteVisualResponse !== null) return deleteVisualResponse;
                 const extremeResponse = await handleExtremeCommand(command);
                 if (extremeResponse !== null) return extremeResponse;
+                const sunshineResponse = await handleSunshineCommand(command);
+                if (sunshineResponse !== null) return sunshineResponse;
 
                 if (/^run\b/i.test(command)) await ensureData();
                 const runVisualResponse = handleRunVisual(command);

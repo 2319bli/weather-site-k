@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sunshine | Weather Site K</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="site.css?v=overview-1"><link rel="stylesheet" href="theme.css?v=design-1">
+<link rel="stylesheet" href="sunshine.css?v=1"><script src="appearance.js?v=indices-1"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script type="module" src="sunshine.mjs?v=1"></script>
+</head><body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header">
+    <div class="masthead">
+        <a class="site-brand" href="index.html" aria-label="Weather Site K home">
+            <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><use href="logo.svg#mark"></use></svg>
+            <span class="brand-copy">Weather Site K</span>
+        </a>
+        <label class="scheme-picker" for="theme-toggle">
+            <span>Colour scheme</span>
+            <select id="theme-toggle" class="theme-toggle">
+              <option value="kimi-1">Daybreak</option>
+              <option value="kimi-2">Midnight</option>
+              <option value="kimi-3">Terracotta</option>
+              <option value="codex-1">Aurora</option>
+              <option value="codex-2">Atlantic</option>
+              <option value="codex-3">Eclipse</option>
+              <option value="claude-1">Amethyst</option>
+              <option value="claude-2">Meadow</option>
+              <option value="claude-3">Ember</option>
+            </select>
+        </label>
+    </div>
+    <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html">Overview</a>
+        <a href="temperature.html">Temperature</a>
+        <a href="ewp.html">Rainfall</a>
+        <a href="sunshine.html" aria-current="page">Sunshine</a>
+        <a href="threshold.html">Thresholds</a>
+        <a href="hei.html">Heat index</a>
+        <a href="fei.html">Freeze index</a>
+        <a href="terminal.html">Terminal</a>
+    </nav>
+</header>
+<main id="main-content" tabindex="-1">
+<section class="page-heading"><h1>Sunshine</h1><span class="dataset-tag">Monthly totals · hours</span></section>
+<div class="sunshine-toolbar">
+  <label for="sunshine-dataset">Dataset <select id="sunshine-dataset"><option value="sunuk">UK wide</option><option value="suneng">England</option><option value="suneaw">England and Wales</option><option value="sunmid">Midlands</option></select></label>
+  <button id="sunshine-refresh" type="button">Refresh data</button>
+  <span id="sunshine-coverage"></span>
+</div>
+<div class="tabs" aria-label="Comparison period">
+  <button class="tab active" type="button" data-period="annual" aria-pressed="true">Annual</button>
+  <button class="tab" type="button" data-period="months" aria-pressed="false">Months</button>
+  <button class="tab" type="button" data-period="seasons" aria-pressed="false">Seasons</button>
+  <button class="tab" type="button" data-period="hex" aria-pressed="false">Hex seasons</button>
+</div>
+<section aria-labelledby="comparison-title">
+  <div class="sunshine-controls"><h2 id="comparison-title">Historical comparison</h2>
+    <label id="period-control" for="sunshine-period" hidden>Period <select id="sunshine-period"></select></label>
+    <label for="sunshine-window">Compare <select id="sunshine-window"><option value="full">Full period</option><option value="to-date">Year to date</option></select></label>
+  </div>
+  <p id="sunshine-status" role="status">Loading server data…</p>
+  <noscript>Enable JavaScript to load sunshine observations.</noscript>
+  <div id="sunshine-content" hidden>
+    <p id="comparison-window" class="hint"></p>
+    <div class="sunshine-summary" id="sunshine-summary"></div>
+    <div id="sunshine-chart" aria-label="Historical sunshine totals"></div>
+    <details class="sunshine-details"><summary>Values and rankings</summary>
+      <label for="sunshine-sort">Order <select id="sunshine-sort"><option value="year">Latest year first</option><option value="high">Sunniest first</option><option value="low">Dullest first</option></select></label>
+      <div class="sunshine-table-scroll"><table class="rank-table"><caption id="sunshine-table-caption"></caption><thead><tr><th scope="col">Year</th><th scope="col">Sunshine (hours)</th><th scope="col">Rank (sunniest)</th><th scope="col">Coverage</th></tr></thead><tbody id="sunshine-rows"></tbody></table></div>
+    </details>
+  </div>
+</section>
+<p class="caption">Source: Met Office HadUK-Grid. <a id="sunshine-source" href="https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/UK.txt">UK wide sunshine data</a>. <span id="sunshine-source-date"></span></p>
+<details class="sunshine-notes"><summary>About these comparisons</summary><ul>
+<li>Values are total sunshine hours. Only complete comparison periods receive a rank; ties share the same rank. Incomplete periods use hollow diamonds.</li>
+<li>Year/period-to-date compares the same complete months in every year, through the latest confirmed month. Daily sunshine data is not available here.</li>
+<li>Winter includes the preceding December and is labelled by its January/February year. Hex seasons are consecutive two-month periods starting in January.</li>
+<li>Published annual and seasonal totals are retained. Hex seasons, partial periods and periods completed by terminal updates are sums of the monthly totals; rounding can cause small differences from published aggregates.</li>
+<li>The server combines the archived Met Office files with confirmed monthly updates. Refresh to load new confirmations.</li>
+</ul></details>
+</main>
+<footer class="site-footer"><span>Weather Site K</span><a href="#main-content">Back to top ↑</a></footer>
+</body></html>

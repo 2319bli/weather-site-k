@@ -4,6 +4,7 @@ import baseline from './baseline.json';
 import { cookie, digest, sessionHash, SESSION_SECONDS, verifyPassword } from './auth.mjs';
 import { DATA_FILES, applyUpdates, csvText, forecastRows, validateUpdates } from './data.mjs';
 import { EXTREME_FILES, EXTREME_URLS, mergeRecords, parseExtremeCsv, validateRecords } from '../public/extremes.mjs';
+import { SUNSHINE, sunshineDataset, sourceUrl, parseSunshine, appendSunshine } from '../public/sunshine-data.mjs';
 
 const securityHeaders = {
   'Cache-Control': 'no-store',
@@ -121,11 +122,43 @@ async function updateExtremes(request, env) {
   if (result.meta.changes !== 1) return json({ error: 'Records changed in another session. Run upd again to review the latest records.' }, 409);
   return json({ updated: records.length, version: body.version + 1 });
 }
+async function readSunshine(env, dataset) {
+  const info = sunshineDataset(dataset);
+  const [original, state] = await Promise.all([
+    originalCsv(env, `sunshine/${info.file}`), readState(env, `sunshine-${dataset}`)
+  ]);
+  const data = parseSunshine(original);
+  const updates = state ? JSON.parse(state.value) : [];
+  if (updates.length) data.records = appendSunshine(data.records, updates);
+  return { ...data, dataset, label: info.label, unit: 'hours', sourceUrl: sourceUrl(dataset), version: state?.version || 0 };
+}
+async function updateSunshine(request, env) {
+  const body = await bodyJson(request);
+  sunshineDataset(body.dataset);
+  if (!Number.isSafeInteger(body.version) || body.version < 0) return json({ error: 'Supply the latest sunshine data version.' }, 400);
+  const key = `sunshine-${body.dataset}`;
+  const before = await readState(env, key);
+  if (!before || before.version !== body.version) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
+  const data = await readSunshine(env, body.dataset);
+  if (data.version !== before.version) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
+  const merged = appendSunshine(data.records, body.updates);
+  const updates = [...JSON.parse(before.value), ...merged.slice(data.records.length)];
+  const result = await env.DB.prepare('UPDATE state SET value=?,version=version+1 WHERE key=? AND version=?')
+    .bind(JSON.stringify(updates), key, before.version).run();
+  if (result.meta.changes !== 1) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
+  return json({ dataset: body.dataset, updated: body.updates.length, latest: updates.at(-1), version: before.version + 1 });
+}
 async function route(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
   const now = Math.floor(Date.now() / 1000);
   if (request.method === 'POST' && request.headers.get('Origin') !== url.origin) return json({ error: 'Invalid request origin.' }, 403);
+  const sunshine = Object.keys(SUNSHINE).find(key => path === `/data/${key}.json`);
+  if (sunshine && ['GET', 'HEAD'].includes(request.method)) {
+    const data = await readSunshine(env, sunshine);
+    return response(request.method === 'HEAD' ? null : JSON.stringify(data), 200,
+      { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
+  }
   const extreme = Object.keys(EXTREME_URLS).find(key => path === `/data/${EXTREME_URLS[key]}`);
   if (extreme && ['GET', 'HEAD'].includes(request.method)) {
     const data = await readExtremes(env, extreme);
@@ -153,6 +186,7 @@ async function route(request, env) {
     if (path === '/api/observed/update' && request.method === 'POST') return updateWeather(request, env, false);
     if (path === '/api/forecast/update' && request.method === 'POST') return updateWeather(request, env, true);
     if (path === '/api/extremes/update' && request.method === 'POST') return updateExtremes(request, env);
+    if (path === '/api/sunshine/update' && request.method === 'POST') return updateSunshine(request, env);
     if (path === '/api/terminal/saved' && request.method === 'GET') {
       const row = await readState(env, `terminal-${terminalIndex(url.searchParams.get('terminal'))}`);
       return json({ entries: row ? JSON.parse(row.value) : [] });
@@ -176,8 +210,8 @@ async function route(request, env) {
     }
     return json({ error: 'Unknown API endpoint or method.' }, 404);
   }
-  if (request.method === 'GET' && ['/index.html', '/temperature.html', '/ewp.html', '/threshold.html', '/hei.html', '/fei.html'].includes(path)) return redirect(new URL(path.slice(1), env.PUBLIC_SITE_URL).href);
-  if (['GET', 'HEAD'].includes(request.method) && ['/site.css', '/theme.css', '/appearance.js', '/logo.svg'].includes(path)) return env.ASSETS.fetch(request);
+  if (request.method === 'GET' && ['/index.html', '/temperature.html', '/ewp.html', '/sunshine.html', '/threshold.html', '/hei.html', '/fei.html'].includes(path)) return redirect(new URL(path.slice(1), env.PUBLIC_SITE_URL).href);
+  if (['GET', 'HEAD'].includes(request.method) && ['/site.css', '/theme.css', '/appearance.js', '/logo.svg', '/sunshine-data.mjs'].includes(path)) return env.ASSETS.fetch(request);
   return response('Not found', 404);
 }
 export default {

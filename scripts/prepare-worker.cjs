@@ -3,9 +3,11 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, '.worker-assets');
 fs.mkdirSync(path.join(output, 'data'), { recursive: true });
-for (const file of ['site.css', 'theme.css', 'appearance.js', 'logo.svg',
+for (const file of ['site.css', 'theme.css', 'appearance.js', 'logo.svg', 'sunshine-data.mjs',
   'data/MeanTempCET.csv', 'data/PrecipitationEWP.csv', 'data/forecast_2026.csv',
-  'data/hottest_days.csv', 'data/coldest_days.csv']) {
+  'data/hottest_days.csv', 'data/coldest_days.csv',
+  ...['UK', 'England', 'England_and_Wales', 'Midlands'].map(region => `data/sunshine/${region}.txt`)]) {
+  fs.mkdirSync(path.dirname(path.join(output, file)), { recursive: true });
   fs.copyFileSync(path.join(root, 'public', file), path.join(output, file));
 }
 const latest = {};
