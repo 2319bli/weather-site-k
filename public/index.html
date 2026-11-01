@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta charset="UTF-8">
     <title>Central England Temperature | Weather site K</title>
     <link rel="preload" href="https://cdn.plot.ly/plotly-2.35.2.min.js" as="script">
@@ -246,30 +247,50 @@ body {
     background-position: right 10px center;
 }
 </style>
-    <link rel="stylesheet" href="site.css">
-    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="site.css?v=design-1">
+    <link rel="stylesheet" href="theme.css?v=design-1">
+    <script src="appearance.js?v=design-1"></script>
 </head>
 <body>
-<nav class="site-nav" aria-label="Main navigation">
-    <a href="index.html" aria-current="page">CET</a>
-    <a href="ewp.html">EWP</a>
-    <a href="threshold.html">Threshold</a>
-    <a href="hei.html">HEI</a>
-    <a href="fei.html">FEI</a>
-    <a href="terminal.html">Terminal</a>
-    <select id="theme-toggle" class="theme-toggle" aria-label="Theme">
-        <option value="kimi-1">kimi 1</option>
-        <option value="kimi-2">kimi 2</option>
-        <option value="kimi-3">kimi 3</option>
-        <option value="codex-1">codex 1</option>
-        <option value="codex-2">codex 2</option>
-        <option value="codex-3">codex 3</option>
-        <option value="claude-1">claude 1</option>
-        <option value="claude-2">claude 2</option>
-        <option value="claude-3">claude 3</option>
-        </select>
-</nav>
-    <h1>Central England Temperature — Year-to-Date Mean Overlay</h1>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header">
+    <div class="masthead">
+        <a class="site-brand" href="index.html" aria-label="Weather site K home">
+            <span class="brand-mark" aria-hidden="true">K<span></span></span>
+            <span class="brand-copy">Weather site K<small>THE UK WEATHER ARCHIVE</small></span>
+        </a>
+        <label class="scheme-picker" for="theme-toggle">
+            <span>Colour scheme</span>
+            <select id="theme-toggle" class="theme-toggle">
+              <option value="kimi-1">Daybreak</option>
+              <option value="kimi-2">Midnight</option>
+              <option value="kimi-3">Terracotta</option>
+              <option value="codex-1">Aurora</option>
+              <option value="codex-2">Atlantic</option>
+              <option value="codex-3">Eclipse</option>
+              <option value="claude-1">Amethyst</option>
+              <option value="claude-2">Meadow</option>
+              <option value="claude-3">Ember</option>
+            </select>
+        </label>
+    </div>
+    <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html" aria-current="page">Temperature</a>
+        <a href="ewp.html">Rainfall</a>
+        <a href="threshold.html">Thresholds</a>
+        <a href="hei.html">Heat index</a>
+        <a href="fei.html">Freeze index</a>
+        <a href="terminal.html">Terminal</a>
+    </nav>
+</header>
+<section class="page-heading" id="main-content" tabindex="-1" aria-labelledby="page-title">
+    <div>
+        <p class="eyebrow"><span>01 /</span> TEMPERATURE RECORD</p>
+        <h1 id="page-title">Central England temperature</h1>
+        <p class="page-description">Explore daily means, compare years and follow the seasons.</p>
+    </div>
+    <span class="dataset-tag">CET · °C</span>
+</section>
     <div class="tabs">
         <button class="tab active" data-tab="annual">Annual</button>
         <button class="tab" data-tab="months">Months</button>
@@ -2352,15 +2373,7 @@ body {
         });
     })();
     </script>
-<script>
-(function(){
-    var t=document.getElementById("theme-toggle");
-    if(!t)return;
-    var k="weather-site-theme";
-    var s=localStorage.getItem(k);
-    if(s){document.documentElement.dataset.theme=s;t.value=s;}
-    t.addEventListener("change",function(){localStorage.setItem(k,t.value);document.documentElement.dataset.theme=t.value;});
-})();
-</script>
+
+<footer class="site-footer"><span>Weather site K</span><span>Explore the record. Find the patterns.</span><a href="#main-content">Back to top ↑</a></footer>
 </body>
 </html>

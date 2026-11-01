@@ -45,6 +45,8 @@ with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / f'{page.stem}-{index}.js'
             path.write_text(script)
             subprocess.run(['node', '--check', str(path)], check=True)
+for script in ROOT.glob('*.js'):
+    subprocess.run(['node', '--check', str(script)], check=True)
 for data in ['MeanTempCET.csv', 'PrecipitationEWP.csv', 'forecast_2026.csv']:
     assert (ROOT / 'data' / data).is_file()
 print('PASS: original pages, local assets, data paths and inline JavaScript syntax')

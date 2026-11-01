@@ -2,7 +2,7 @@
 
 Weather site K is the original six-page weather site, published at **https://2319bli.github.io/weather-site-k/**.
 
-The HTML, inline chart code, theme choices, default appearance and styles are restored from the original `site/` folder, with the branding updated to **Weather site K**. The original source folder and unrelated local files remain untouched.
+The original chart calculations, data loaders and terminal behaviour are retained. The shared interface has been redesigned with a clearer archive layout, responsive navigation, accessible controls and nine named colour schemes. The original source folder and unrelated local files remain untouched.
 
 ## GitHub Pages adaptations
 
@@ -10,7 +10,11 @@ The HTML, inline chart code, theme choices, default appearance and styles are re
 - GitHub Pages cannot run `weather_server.py`. The terminal uses its original browser-storage fallback for saved sessions and presets. Dataset-write commands (`conf`, `upd` followed by `confirm`) report that the Python server is required; they do not simulate edits or change the public CSVs. Queries and rankings work against the published data.
 - The deployment workflow validates and uploads only `public/` on pushes to `main`.
 
-There is no added data-processing layer, forced default theme, renamed theme menu, or responsive redesign. The original loaders handle both ISO and day-first CSV dates. Plotly uses the original pinned CDN versions.
+The original loaders handle both ISO and day-first CSV dates. Plotly uses the original pinned CDN versions. The visual redesign does not add a data-processing layer.
+
+## Colour schemes
+
+Daybreak, Midnight, Terracotta, Aurora, Atlantic, Eclipse, Amethyst, Meadow and Ember. Atlantic is the default for new visitors; existing saved choices keep their original palette IDs. The theme menu uses the existing `weather-site-theme` preference. All schemes share the same layout; charts retain their original series colours.
 
 ## Local preview
 
