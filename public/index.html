@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="description" content="Explore historical UK weather: temperature, rainfall, thresholds and interactive rankings.">
+    <script src="js/data.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <title>Central England Temperature | Weather Lab</title>
+    <link rel="preload" href="https://cdn.plot.ly/plotly-2.35.2.min.js" as="script">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    
+
+
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/site.css">
+    <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="Main navigation">
+    <a href="index.html" aria-current="page">CET</a>
+    <a href="ewp.html">EWP</a>
+    <a href="threshold.html">Threshold</a>
+    <a href="hei.html">HEI</a>
+    <a href="fei.html">FEI</a>
+    <a href="terminal.html">Terminal</a>
+    <select id="theme-toggle" class="theme-toggle" aria-label="Theme">
+        <option value="kimi-1">Sky</option>
+        <option value="kimi-2">Midnight</option>
+        <option value="kimi-3">Amber</option>
+        <option value="codex-1">Slate</option>
+        <option value="codex-2">Ink</option>
+        <option value="codex-3">Sand</option>
+        <option value="claude-1">Paper</option>
+        <option value="claude-2">Forest</option>
+        <option value="claude-3">Twilight</option>
+        </select>
+</nav>
+    <h1>Central England Temperature — Year-to-Date Mean Overlay</h1>
+    <div class="tabs">
+        <button class="tab active" data-tab="annual">Annual</button>
+        <button class="tab" data-tab="months">Months</button>
+        <button class="tab" data-tab="seasons">Seasons</button>
+        <button class="tab" data-tab="hex-seasons">Hex Seasons</button>
+    </div>
+    <div class="layout">
+        <div class="chart-area">
+            <div id="forecast-summary" class="summary-box"></div>
+            <div id="chart">Loading...</div>
+            <div id="nov13-summary" class="summary-box"></div>
+        </div>
+        <aside class="control-panel">
+            <div id="annual-controls" class="tab-content active">
+                <h2>Years in View</h2>
+                <p class="hint">Add up to 10 years. Click × to remove.</p>
+                <h2 style="margin-top: 20px;">Year Selection Mode</h2>
+                <div class="mode-selector" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" class="mode-button-annual" data-mode="mildest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mildest 9 years
+                    </button>
+                    <button type="button" class="mode-button-annual" data-mode="coldest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Coldest 9 years
+                    </button>
+                    <button type="button" class="mode-button-annual" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mixed (5 mildest + 4 coldest)
+                    </button>
+                    <button type="button" class="mode-button-annual" data-mode="warmestUpTo" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Warmest 9 up to date
+                    </button>
+                    <button type="button" class="mode-button-annual" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="2026 and 2017–2025">
+                        Last 9 years
+                    </button>
+                </div>
+                <div id="annual-warmest-up-to-controls" style="margin-top: 10px; margin-bottom: 20px; display: none;">
+                    <h2 style="margin: 0 0 8px; font-size: 1rem;">Up To Date</h2>
+                    <p class="hint" style="margin-top: 0;">Ranking uses month/day; the year is ignored.</p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input id="annual-up-to-date" type="date" style="flex: 1 1 auto; padding: 6px 8px; font-size: 1rem; border: 1px solid #dcdcdc; border-radius: 4px;" />
+                    </div>
+                </div>
+                <form id="year-form">
+                    <input
+                        id="year-input"
+                        type="number"
+                        placeholder="Enter year (e.g. 2025)"
+                        min="1700"
+                        max="2100"
+                        required
+                    />
+                    <button type="submit">Add</button>
+                </form>
+                <small id="year-error" class="error"></small>
+                <ul id="year-list" class="year-list"></ul>
+            </div>
+            <div id="months-controls" class="tab-content">
+                <h2>Month Selection</h2>
+                <div class="month-selector">
+                    <label for="month-select">Select Month:</label>
+                    <select id="month-select">
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12" selected>December</option>
+        </select>
+                </div>
+                <h2 style="margin-top: 20px;">Year Selection Mode</h2>
+                <div class="mode-selector" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" class="mode-button" data-mode="mildest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mildest 9 years
+                    </button>
+                    <button type="button" class="mode-button" data-mode="coldest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Coldest 9 years
+                    </button>
+                    <button type="button" class="mode-button" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mixed (5 mildest + 4 coldest)
+                    </button>
+                </div>
+                <h2 style="margin-top: 20px;">Years in View</h2>
+                <p class="hint">Add up to 10 years. Click × to remove.</p>
+                <form id="year-form-monthly">
+                    <input
+                        id="year-input-monthly"
+                        type="number"
+                        placeholder="Enter year (e.g. 2025)"
+                        min="1700"
+                        max="2100"
+                        required
+                    />
+                    <button type="submit">Add</button>
+                </form>
+                <small id="year-error-monthly" class="error"></small>
+                <ul id="year-list-monthly" class="year-list"></ul>
+            </div>
+            <div id="seasons-controls" class="tab-content">
+                <h2>Season Selection</h2>
+                <div class="month-selector">
+                    <label for="season-select">Select Season:</label>
+                    <select id="season-select">
+        <option value="winter" selected>Winter</option>
+        <option value="spring">Spring</option>
+        <option value="summer">Summer</option>
+        <option value="autumn">Autumn</option>
+        </select>
+                </div>
+                <h2 style="margin-top: 20px;">Year Selection Mode</h2>
+                <div class="mode-selector" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" class="mode-button-season" data-mode="mildest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mildest 9 years
+                    </button>
+                    <button type="button" class="mode-button-season" data-mode="coldest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Coldest 9 years
+                    </button>
+                    <button type="button" class="mode-button-season" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mixed (5 mildest + 4 coldest)
+                    </button>
+                </div>
+                <h2 style="margin-top: 20px;">Years in View</h2>
+                <p class="hint">Add up to 10 years. Click × to remove.</p>
+                <form id="year-form-season">
+                    <input
+                        id="year-input-season"
+                        type="number"
+                        placeholder="Enter year (e.g. 2025)"
+                        min="1700"
+                        max="2100"
+                        required
+                    />
+                    <button type="submit">Add</button>
+                </form>
+                <small id="year-error-season" class="error"></small>
+                <ul id="year-list-season" class="year-list"></ul>
+            </div>
+            <div id="hex-seasons-controls" class="tab-content">
+                <h2>Hex-Season Selection</h2>
+                <div class="month-selector">
+                    <label for="hex-season-select">Select Hex-Season:</label>
+                    <select id="hex-season-select">
+        <option value="win">Winter</option>
+        <option value="spr">Spring</option>
+        <option value="pra">Prasiner</option>
+        <option value="xan" selected>Xanther</option>
+        <option value="aut">Autumn</option>
+        <option value="pha">Phaier</option>
+        </select>
+                </div>
+                <h2 style="margin-top: 20px;">Year Selection Mode</h2>
+                <div class="mode-selector" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" class="mode-button-hex-season" data-mode="mildest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mildest 9 years
+                    </button>
+                    <button type="button" class="mode-button-hex-season" data-mode="coldest" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Coldest 9 years
+                    </button>
+                    <button type="button" class="mode-button-hex-season" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
+                        Mixed (5 mildest + 4 coldest)
+                    </button>
+                </div>
+                <h2 style="margin-top: 20px;">Years in View</h2>
+                <p class="hint">Add up to 10 years. Click × to remove.</p>
+                <form id="year-form-hex-season">
+                    <input
+                        id="year-input-hex-season"
+                        type="number"
+                        placeholder="Enter year (e.g. 2025)"
+                        min="1700"
+                        max="2100"
+                        required
+                    />
+                    <button type="submit">Add</button>
+                </form>
+                <small id="year-error-hex-season" class="error"></small>
+                <ul id="year-list-hex-season" class="year-list"></ul>
+            </div>
+        </aside>
+    </div>
+    <p class="caption">
+        Data source: <code>MeanTempCET.csv</code> (daily CET values). Forecast extensions for 2025 and 2026 are dotted.
+    </p>
+
+    <script src="js/index-1.js"></script>
+<script src="js/theme.js"></script>
+</body>
+</html>

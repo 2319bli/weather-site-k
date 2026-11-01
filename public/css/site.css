@@ -1,0 +1,516 @@
+/* ============================================================
+   SITE — Shared base styles for all pages
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  background: var(--bg-html, #e9edf3);
+}
+
+body {
+  max-width: 1500px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px clamp(16px, 3vw, 36px) 52px;
+  background: var(--bg-body, #f7f9fc);
+  color: var(--text-body, #1f2937);
+  font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+button, input, select, textarea { font: inherit; }
+
+h1 {
+  margin: 6px 0 22px;
+  color: var(--heading, #111827);
+  font-size: clamp(1.4rem, 2.1vw, 1.95rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+
+/* ----------------------------------------------------------------
+   Navigation
+   ---------------------------------------------------------------- */
+
+.site-nav {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(12px, 1.8vw, 24px) !important;
+  flex-wrap: nowrap !important;
+  min-height: 60px !important;
+  margin: -24px calc(-1 * clamp(16px, 3vw, 36px)) 30px !important;
+  padding: 0 clamp(16px, 3vw, 36px) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--nav-border, #d8dee8) !important;
+  border-radius: 0 !important;
+  background: var(--nav-bg, rgba(255,255,255,0.96)) !important;
+  box-shadow: 0 4px 20px var(--nav-shadow, rgba(15,23,42,0.06)) !important;
+  backdrop-filter: blur(12px) !important;
+  overflow-x: auto !important;
+}
+
+.site-nav::before {
+  content: "Weather" !important;
+  flex: 0 0 auto;
+  margin-right: auto !important;
+  color: var(--heading, #111827) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.site-nav a {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  align-self: stretch !important;
+  flex: 0 0 auto !important;
+  padding: 0 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--nav-link, #475569) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  transition: color 0.14s !important;
+}
+
+.site-nav a::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  height: 3px !important;
+  border-radius: 999px 999px 0 0 !important;
+  background: transparent !important;
+  transition: background 0.14s !important;
+}
+
+.site-nav a:hover {
+  color: var(--nav-link-hover, #111827) !important;
+  background: transparent !important;
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--heading, #111827) !important;
+  background: transparent !important;
+}
+
+.site-nav a[aria-current="page"]::after {
+  background: var(--nav-active-line, #1f2937) !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Theme toggle
+   ---------------------------------------------------------------- */
+
+.theme-toggle {
+  flex-shrink: 0 !important;
+  margin-left: 0 !important;
+  padding: 5px 26px 5px 10px !important;
+  border: 1px solid var(--nav-border, #d8dee8) !important;
+  border-radius: 7px !important;
+  background-color: var(--nav-link-bg, #fff) !important;
+  color: var(--nav-link, #475569) !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Layout
+   ---------------------------------------------------------------- */
+
+.layout {
+  display: flex !important;
+  gap: 20px !important;
+  align-items: flex-start !important;
+}
+
+.chart-area {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Cards / panels
+   ---------------------------------------------------------------- */
+
+#chart,
+.plotly-graph-div,
+.control-panel,
+.summary-box,
+.top10-list {
+  border: 1px solid var(--panel-border, #d8dee8) !important;
+  border-radius: 10px !important;
+  background: var(--panel-bg, #ffffff) !important;
+  box-shadow: 0 4px 20px var(--panel-shadow, rgba(15,23,42,0.07)) !important;
+}
+
+#chart,
+.plotly-graph-div {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.control-panel {
+  width: 280px !important;
+  padding: 18px !important;
+}
+
+.control-panel h2 {
+  margin: 18px 0 8px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--panel-border, #e8ecf0) !important;
+  color: var(--hint-text, #64748b) !important;
+  font-size: 0.7rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.control-panel h2:first-child,
+.control-panel h2:first-of-type {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: none !important;
+}
+
+.summary-box {
+  padding: 12px 16px !important;
+  margin-bottom: 14px !important;
+  font-size: 0.9rem !important;
+  line-height: 1.55 !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Tabs — segmented control style
+   ---------------------------------------------------------------- */
+
+.tabs {
+  display: inline-flex !important;
+  gap: 3px !important;
+  margin-bottom: 18px !important;
+  padding: 4px !important;
+  border: 1px solid var(--panel-border, #d8dee8) !important;
+  border-radius: 10px !important;
+  background: var(--panel-bg, #fff) !important;
+  box-shadow: 0 2px 8px var(--panel-shadow, rgba(15,23,42,0.05)) !important;
+}
+
+.tab {
+  padding: 7px 20px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  color: var(--nav-link, #475569) !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: background 0.14s, color 0.14s, box-shadow 0.14s !important;
+  white-space: nowrap !important;
+}
+
+.tab:hover {
+  background: var(--tab-hover-bg, #f1f5f9) !important;
+  color: var(--heading, #111827) !important;
+}
+
+.tab.active {
+  background: var(--tab-active-bg, #111827) !important;
+  color: var(--tab-active-text, #fff) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.16) !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Mode buttons — pill-chip toggles
+   ---------------------------------------------------------------- */
+
+.mode-selector {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  margin-bottom: 4px !important;
+}
+
+.mode-button,
+.mode-button-annual,
+.mode-button-season,
+.mode-button-hex-season {
+  padding: 6px 14px !important;
+  border: 1px solid var(--panel-border, #d8dee8) !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--nav-link, #475569) !important;
+  font-size: 0.83rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  transition: background 0.12s, color 0.12s, border-color 0.12s !important;
+}
+
+.mode-button:hover,
+.mode-button-annual:hover,
+.mode-button-season:hover,
+.mode-button-hex-season:hover {
+  background: var(--tab-hover-bg, #f1f5f9) !important;
+  color: var(--heading, #111827) !important;
+  border-color: var(--heading, #94a3b8) !important;
+}
+
+/* Active state — applied via JS .active class */
+.mode-button.active,
+.mode-button-annual.active,
+.mode-button-season.active,
+.mode-button-hex-season.active {
+  background: var(--tab-active-bg, #1f2937) !important;
+  color: var(--tab-active-text, #fff) !important;
+  border-color: var(--tab-active-bg, #1f2937) !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Form elements
+   ---------------------------------------------------------------- */
+
+.control-panel input,
+.control-panel select,
+.month-selector select {
+  padding: 7px 10px !important;
+  border: 1px solid var(--panel-border, #d8dee8) !important;
+  border-radius: 7px !important;
+  background: var(--bg-body, #f7f9fc) !important;
+  color: var(--text-body, #1f2937) !important;
+  font-size: 0.9rem !important;
+  transition: border-color 0.14s, box-shadow 0.14s !important;
+}
+
+.control-panel input:focus,
+.control-panel select:focus,
+.month-selector select:focus {
+  outline: none !important;
+  border-color: var(--tab-active-bg, #475569) !important;
+  box-shadow: 0 0 0 3px rgba(71,85,105,0.1) !important;
+}
+
+.control-panel form button,
+.control-panel button[type="submit"] {
+  padding: 7px 14px !important;
+  border: 1px solid var(--tab-active-bg, #1f2937) !important;
+  border-radius: 7px !important;
+  background: var(--tab-active-bg, #1f2937) !important;
+  color: var(--tab-active-text, #fff) !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.control-panel form button:hover,
+.control-panel button[type="submit"]:hover {
+  opacity: 0.85 !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Year tags
+   ---------------------------------------------------------------- */
+
+.year-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 8px 0 0 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.year-list li {
+  border-radius: 999px !important;
+  padding: 3px 9px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+}
+
+.year-list li button {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  color: rgba(255,255,255,0.55) !important;
+}
+
+.year-list li button:hover {
+  color: rgba(255,255,255,0.95) !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Hints, captions, error text
+   ---------------------------------------------------------------- */
+
+.hint {
+  color: var(--hint-text, #64748b) !important;
+  font-size: 0.82rem !important;
+  margin: 0 0 6px !important;
+}
+
+.caption {
+  margin-top: 10px !important;
+  color: var(--hint-text, #64748b) !important;
+  font-size: 0.88rem !important;
+}
+
+.error {
+  display: block !important;
+  min-height: 16px !important;
+  margin-bottom: 6px !important;
+  font-size: 0.82rem !important;
+  color: #dc2626 !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Tables
+   ---------------------------------------------------------------- */
+
+.top10-list { overflow-x: auto !important; }
+.top10-table { min-width: 720px !important; }
+
+.top10-table th {
+  background: var(--tab-active-bg, #1f2937) !important;
+  color: var(--tab-active-text, #fff) !important;
+}
+
+.top10-table td,
+.top10-table th {
+  border-bottom: 1px solid var(--table-border, #e5e7eb) !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Terminal page extras
+   ---------------------------------------------------------------- */
+
+.terminal-tab {
+  border: 1px solid var(--panel-border, #d8dee8) !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  background: var(--panel-bg, #fff) !important;
+  color: var(--nav-link, #475569) !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: background 0.14s, color 0.14s !important;
+}
+
+.terminal-tab:hover {
+  background: var(--tab-hover-bg, #f1f5f9) !important;
+  color: var(--heading, #111827) !important;
+}
+
+.terminal-tab[aria-selected="true"] {
+  background: var(--tab-active-bg, #111827) !important;
+  color: var(--tab-active-text, #fff) !important;
+  border-color: var(--tab-active-bg, #111827) !important;
+}
+
+.terminal-shell {
+  border-radius: 10px !important;
+  box-shadow: 0 12px 36px var(--shell-shadow, rgba(15,23,42,0.18)) !important;
+}
+
+.visual-output-panel {
+  border-radius: 10px !important;
+  box-shadow: 0 4px 20px var(--panel-shadow, rgba(15,23,42,0.07)) !important;
+}
+
+
+/* ----------------------------------------------------------------
+   Responsive
+   ---------------------------------------------------------------- */
+
+@media (max-width: 760px) {
+  body {
+    padding: 12px 12px 40px !important;
+  }
+
+  .site-nav {
+    min-height: 52px !important;
+    margin: -12px -12px 20px !important;
+    padding: 0 12px !important;
+    gap: 14px !important;
+  }
+
+  .layout {
+    display: block !important;
+  }
+
+  .control-panel {
+    width: auto !important;
+    max-width: 100% !important;
+    margin-top: 16px !important;
+  }
+
+  #chart {
+    height: 520px !important;
+  }
+
+  .plotly-graph-div {
+    height: 430px !important;
+  }
+
+  .tabs {
+    display: flex !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .tab {
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    padding: 7px 10px !important;
+  }
+
+  .mode-button,
+  .mode-button-annual,
+  .mode-button-season,
+  .mode-button-hex-season {
+    text-align: center !important;
+  }
+}
+
+/* Shared accessibility and small-screen fixes. */
+:focus-visible { outline: 3px solid #0284c7; outline-offset: 3px; }
+.storage-note { color: var(--hint-text, #475569); max-width: 85ch; }
+.plotly-graph-div { max-width: 100%; }
+.control-panel input { min-width: 0; }
+@media (max-width: 760px) {
+  .terminal-layout { grid-template-columns: minmax(0, 1fr) !important; }
+  .terminal-shell, .visual-output-panel { min-width: 0; }
+  .terminal-output { white-space: pre-wrap; overflow-wrap: anywhere; }
+}

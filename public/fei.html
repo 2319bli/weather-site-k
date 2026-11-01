@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="description" content="Explore historical UK weather: temperature, rainfall, thresholds and interactive rankings.">
+    <script src="js/data.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Freeze Excess Index | Weather Lab</title><meta charset="utf-8" />
+
+    <link rel="stylesheet" href="css/fei.css">
+    <link rel="stylesheet" href="css/site.css">
+    <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="Main navigation">
+    <a href="index.html">CET</a>
+    <a href="ewp.html">EWP</a>
+    <a href="threshold.html">Threshold</a>
+    <a href="hei.html">HEI</a>
+    <a href="fei.html" aria-current="page">FEI</a>
+    <a href="terminal.html">Terminal</a>
+    <select id="theme-toggle" class="theme-toggle" aria-label="Theme">
+        <option value="kimi-1">Sky</option>
+        <option value="kimi-2">Midnight</option>
+        <option value="kimi-3">Amber</option>
+        <option value="codex-1">Slate</option>
+        <option value="codex-2">Ink</option>
+        <option value="codex-3">Sand</option>
+        <option value="claude-1">Paper</option>
+        <option value="claude-2">Forest</option>
+        <option value="claude-3">Twilight</option>
+        </select>
+</nav>
+    <div>                        <script src="js/fei-1.js"></script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.2.0.min.js" integrity="sha256-iZ2u/oU2wf/vDbl/ChcX93WgbBRSBvUO6N413hDz7xM=" crossorigin="anonymous"></script>                <div id="a6b48435-6e4a-4ade-bcc2-e0d46ed4c126" class="plotly-graph-div" style="height:600px; width:100%;"></div>            <script src="js/fei-2.js"></script>        </div>
+
+
+<div class="top10-list">
+    <h2>Top 10 Days by Freeze Excess Index (FEI)</h2>
+    <table class="top10-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Date</th>
+                <th>Day of Year</th>
+                <th>FEI</th>
+                <th>Occurrences</th>
+                <th>Years</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <tr>
+                <td><strong>1</strong></td>
+                <td>30 December</td>
+                <td>Day 364</td>
+                <td><strong>64.4</strong></td>
+                <td>6</td>
+                <td>1906, 1908, 1961, 1995, 2000, 2008</td>
+            </tr>
+
+            <tr>
+                <td><strong>2</strong></td>
+                <td>13 December</td>
+                <td>Day 347</td>
+                <td><strong>61.4</strong></td>
+                <td>5</td>
+                <td>1878, 1920, 1937, 1981, 2022</td>
+            </tr>
+
+            <tr>
+                <td><strong>3</strong></td>
+                <td>11 February</td>
+                <td>Day 42</td>
+                <td><strong>57.4</strong></td>
+                <td>5</td>
+                <td>1876, 1895, 1900, 2012, 2021</td>
+            </tr>
+
+            <tr>
+                <td><strong>4</strong></td>
+                <td>03 March</td>
+                <td>Day 62</td>
+                <td><strong>55.1</strong></td>
+                <td>5</td>
+                <td>1909, 1924, 1931, 1965, 2001</td>
+            </tr>
+
+            <tr>
+                <td><strong>5</strong></td>
+                <td>17 January</td>
+                <td>Day 17</td>
+                <td><strong>44.1</strong></td>
+                <td>4</td>
+                <td>1881, 1926, 1977, 2024</td>
+            </tr>
+
+            <tr>
+                <td><strong>6</strong></td>
+                <td>14 February</td>
+                <td>Day 45</td>
+                <td><strong>37.5</strong></td>
+                <td>5</td>
+                <td>1902, 1929, 1974, 1991, 2016</td>
+            </tr>
+
+            <tr>
+                <td><strong>7</strong></td>
+                <td>13 January</td>
+                <td>Day 13</td>
+                <td><strong>36.9</strong></td>
+                <td>3</td>
+                <td>1903, 1979, 1987</td>
+            </tr>
+
+            <tr>
+                <td><strong>8</strong></td>
+                <td>20 February</td>
+                <td>Day 51</td>
+                <td><strong>30.8</strong></td>
+                <td>3</td>
+                <td>1916, 1957, 1978</td>
+            </tr>
+
+            <tr>
+                <td><strong>9</strong></td>
+                <td>15 December</td>
+                <td>Day 349</td>
+                <td><strong>30.7</strong></td>
+                <td>3</td>
+                <td>1882, 1950, 1989</td>
+            </tr>
+
+            <tr>
+                <td><strong>10</strong></td>
+                <td>05 January</td>
+                <td>Day 5</td>
+                <td><strong>28.8</strong></td>
+                <td>3</td>
+                <td>1941, 1943, 1949</td>
+            </tr>
+
+        </tbody>
+    </table>
+</div>
+<script src="js/theme.js"></script>
+</body>
+</html>

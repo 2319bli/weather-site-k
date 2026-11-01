@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="description" content="Explore historical UK weather: temperature, rainfall, thresholds and interactive rankings.">
+    <script src="js/data.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heat Excess Index | Weather Lab</title><meta charset="utf-8" />
+
+    <link rel="stylesheet" href="css/hei.css">
+    <link rel="stylesheet" href="css/site.css">
+    <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="Main navigation">
+    <a href="index.html">CET</a>
+    <a href="ewp.html">EWP</a>
+    <a href="threshold.html">Threshold</a>
+    <a href="hei.html" aria-current="page">HEI</a>
+    <a href="fei.html">FEI</a>
+    <a href="terminal.html">Terminal</a>
+    <select id="theme-toggle" class="theme-toggle" aria-label="Theme">
+        <option value="kimi-1">Sky</option>
+        <option value="kimi-2">Midnight</option>
+        <option value="kimi-3">Amber</option>
+        <option value="codex-1">Slate</option>
+        <option value="codex-2">Ink</option>
+        <option value="codex-3">Sand</option>
+        <option value="claude-1">Paper</option>
+        <option value="claude-2">Forest</option>
+        <option value="claude-3">Twilight</option>
+        </select>
+</nav>
+    <div>                        <script src="js/hei-1.js"></script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.2.0.min.js" integrity="sha256-iZ2u/oU2wf/vDbl/ChcX93WgbBRSBvUO6N413hDz7xM=" crossorigin="anonymous"></script>                <div id="7764b67b-b185-4dde-8bfb-6a867ee22987" class="plotly-graph-div" style="height:600px; width:100%;"></div>            <script src="js/hei-2.js"></script>        </div>
+
+<div class="top10-list">
+    <h2>Top 10 Days by Heat Excess Index (HEI)</h2>
+    <table class="top10-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Date</th>
+                <th>Day of Year</th>
+                <th>HEI</th>
+                <th>Occurrences</th>
+                <th>Years</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <tr>
+                <td><strong>1</strong></td>
+                <td>01 July</td>
+                <td>Day 182</td>
+                <td><strong>47.4</strong></td>
+                <td>7</td>
+                <td>1894, 1914, 1952, 1961, 1968, 2015, 2025</td>
+            </tr>
+
+            <tr>
+                <td><strong>2</strong></td>
+                <td>19 July</td>
+                <td>Day 200</td>
+                <td><strong>37.3</strong></td>
+                <td>4</td>
+                <td>1901, 2006, 2016, 2022</td>
+            </tr>
+
+            <tr>
+                <td><strong>3</strong></td>
+                <td>01 August</td>
+                <td>Day 213</td>
+                <td><strong>27.9</strong></td>
+                <td>5</td>
+                <td>1889, 1938, 1995, 1999, 2013</td>
+            </tr>
+
+            <tr>
+                <td><strong>4</strong></td>
+                <td>15 July</td>
+                <td>Day 196</td>
+                <td><strong>25.0</strong></td>
+                <td>4</td>
+                <td>1881, 1928, 1945, 1983</td>
+            </tr>
+
+            <tr>
+                <td><strong>5</strong></td>
+                <td>12 July</td>
+                <td>Day 193</td>
+                <td><strong>23.7</strong></td>
+                <td>4</td>
+                <td>1912, 1924, 1949, 1994</td>
+            </tr>
+
+            <tr>
+                <td><strong>6</strong></td>
+                <td>10 August</td>
+                <td>Day 222</td>
+                <td><strong>22.8</strong></td>
+                <td>3</td>
+                <td>1997, 1998, 2003</td>
+            </tr>
+
+            <tr>
+                <td><strong>7</strong></td>
+                <td>11 July</td>
+                <td>Day 192</td>
+                <td><strong>22.1</strong></td>
+                <td>4</td>
+                <td>1921, 1934, 1971, 1991</td>
+            </tr>
+
+            <tr>
+                <td><strong>8</strong></td>
+                <td>22 July</td>
+                <td>Day 203</td>
+                <td><strong>21.8</strong></td>
+                <td>4</td>
+                <td>1925, 1963, 1989, 1996</td>
+            </tr>
+
+            <tr>
+                <td><strong>9</strong></td>
+                <td>27 July</td>
+                <td>Day 208</td>
+                <td><strong>19.4</strong></td>
+                <td>3</td>
+                <td>1933, 1979, 2018</td>
+            </tr>
+
+            <tr>
+                <td><strong>10</strong></td>
+                <td>13 July</td>
+                <td>Day 194</td>
+                <td><strong>18.0</strong></td>
+                <td>3</td>
+                <td>1923, 1935, 1985</td>
+            </tr>
+
+        </tbody>
+    </table>
+</div>
+<script src="js/theme.js"></script>
+</body>
+</html>

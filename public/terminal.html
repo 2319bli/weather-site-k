@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="description" content="Explore historical UK weather: temperature, rainfall, thresholds and interactive rankings.">
+    <script src="js/data.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Terminal | Weather Lab</title>
+    
+
+    <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/site.css">
+    <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+    <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html">CET</a>
+        <a href="ewp.html">EWP</a>
+        <a href="threshold.html">Threshold</a>
+        <a href="hei.html">HEI</a>
+        <a href="fei.html">FEI</a>
+        <a href="terminal.html" aria-current="page">Terminal</a>
+        <select id="theme-toggle" class="theme-toggle" aria-label="Theme">
+            <option value="kimi-1">Sky</option>
+            <option value="kimi-2">Midnight</option>
+            <option value="kimi-3">Amber</option>
+            <option value="codex-1">Slate</option>
+            <option value="codex-2">Ink</option>
+            <option value="codex-3">Sand</option>
+            <option value="claude-1">Paper</option>
+            <option value="claude-2">Forest</option>
+            <option value="claude-3">Twilight</option>
+            </select>
+    </nav>
+
+    <h1>Weather Terminal</h1>
+    <p class="storage-note">Saves and data edits stay in this browser. Charts use your local edits after reloading. To update the public dataset, commit the CSV files in the repository.</p>
+
+    <div class="terminal-tabs" role="tablist" aria-label="Terminal sessions">
+        <button type="button" class="terminal-tab" data-terminal="0" role="tab" aria-selected="true">Terminal 1</button>
+        <button type="button" class="terminal-tab" data-terminal="1" role="tab" aria-selected="false">Terminal 2</button>
+        <button type="button" class="terminal-tab" data-terminal="2" role="tab" aria-selected="false">Terminal 3</button>
+    </div>
+
+    <main class="terminal-layout">
+        <section class="terminal-shell" aria-label="Command terminal">
+            <pre id="terminal-output" class="terminal-output" aria-live="polite">Ready.
+Commands:
+dat cet
+dat ewp
+save
+savevis spring
+run spring
+vis
+rank table cet year high 10
+rank graph ewp win6 low 4
+conf cet "
+15/05/2026 9.2
+"
+conf ewp "
+2026-05-08 0.4
+"
+view for 15/05/2026-22/05/2026
+view cet 01/05/2026-17/05/2026
+view ewp 01/05/2026-17/05/2026
+upd "
+2026-05-18 12.3
+19/05/2026 13.7
+"</pre>
+
+            <form id="terminal-form" class="terminal-form">
+                <textarea aria-label="Weather command" id="terminal-input" class="terminal-input" spellcheck="false" autocomplete="off" placeholder="Type a command..."></textarea>
+                <div class="terminal-actions">
+                    <button type="submit">Run</button>
+                    <button type="button" class="secondary" id="clear-output">Clear</button>
+                    <span class="terminal-help">After a valid <code>upd</code>, type <code>confirm</code> to apply it.</span>
+                </div>
+            </form>
+        </section>
+
+        <aside class="visual-output-panel" aria-label="Terminal visual output">
+            <div id="visual-output-header" class="visual-output-header">Output</div>
+            <div id="visual-output-body" class="visual-output-body">Visualisations will appear here.</div>
+        </aside>
+    </main>
+
+    <script src="js/terminal-1.js"></script>
+<script src="js/theme.js"></script>
+</body>
+</html>
