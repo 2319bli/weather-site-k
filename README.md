@@ -18,7 +18,7 @@ Sunshine uses the same four-region dropdown as the sunshine page: UK wide, Engla
 
 ## Temperature views
 
-Annual, monthly, seasonal and hex-seasonal charts each offer **Cumulative average**, **Daily CET** and **Historical comparison**, retaining the selected mode within each tab. Cumulative averages keep the original calculations and year controls. Daily CET uses those same selected years, with dotted forecasts shown separately.
+Annual, monthly, seasonal and hex-seasonal charts each offer **Cumulative average**, **Daily CET** and **Historical comparison**, retaining the selected mode within each tab. Cumulative averages keep the original calculations and year controls. Daily CET uses those same selected years, with dotted forecasts shown separately. The **Last 9 years** preset is available in the annual, monthly, seasonal and hex-seasonal year controls: it selects the latest dataset year plus the preceding nine calendar years (currently 2026 and 2017–2025). It stays selected when changing month or season; manual add/remove remains available.
 
 Daily records show the archive's warmest and coldest daily mean for each calendar date, a shaded range, and the record holders on hover. Select a record year to highlight its still-standing records and list their dates, temperatures and all tied holders. The selected record year is also drawn even when it is outside the year list. Switch off **Show daily records** for just the selected years. This feature follows the daily-record view in [WeatherArchives](https://pr-141.github.io/WeatherArchives/cet_mean_daily_extremes.html), using Weather Site K's live CET archive.
 

@@ -346,7 +346,7 @@ body {
                     <button type="button" class="mode-button-annual" data-mode="warmestUpTo" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Warmest 9 up to date
                     </button>
-                    <button type="button" class="mode-button-annual" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="2026 and 2017–2025">
+                    <button type="button" class="mode-button-annual" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
                         Last 9 years
                     </button>
                 </div>
@@ -403,6 +403,9 @@ body {
                     <button type="button" class="mode-button" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Mixed (5 mildest + 4 coldest)
                     </button>
+                    <button type="button" class="mode-button" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
+                        Last 9 years
+                    </button>
                 </div>
                 <h2 style="margin-top: 20px;">Years in View</h2>
                 <p class="hint">Add up to 10 years. Click × to remove.</p>
@@ -443,6 +446,9 @@ body {
                     </button>
                     <button type="button" class="mode-button-season" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Mixed (5 mildest + 4 coldest)
+                    </button>
+                    <button type="button" class="mode-button-season" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
+                        Last 9 years
                     </button>
                 </div>
                 <h2 style="margin-top: 20px;">Years in View</h2>
@@ -486,6 +492,9 @@ body {
                     </button>
                     <button type="button" class="mode-button-hex-season" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Mixed (5 mildest + 4 coldest)
+                    </button>
+                    <button type="button" class="mode-button-hex-season" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
+                        Last 9 years
                     </button>
                 </div>
                 <h2 style="margin-top: 20px;">Years in View</h2>
@@ -694,6 +703,7 @@ body {
                 // Add 2026 forecast rows to the main rows array
                 rows = rows.concat(forecast2026Rows);
             }
+            const latestComparisonYear = Math.max(...availableYears);
             // Build year index for O(1) lookup instead of O(n) filter on every render
             const rowsByYear = new Map();
             rows.forEach((row) => {
@@ -937,11 +947,13 @@ body {
                 });
             }
 
+            function getRecentComparisonYears() {
+                return Array.from({ length: MAX_YEARS }, (_, index) => latestComparisonYear - index)
+                    .filter(year => availableYears.has(year));
+            }
+
             function getYearsForAnnualMode(mode) {
-                if (mode === "last9") {
-                    const LAST9_FIXED = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017];
-                    return LAST9_FIXED.filter((y) => availableYears.has(y)).slice(0, MAX_YEARS);
-                }
+                if (mode === "last9") return getRecentComparisonYears();
 
                 const currentYear = new Date().getUTCFullYear();
                 const upToDate = state.annualWarmestUpToDate || TARGET_DATE;
@@ -1310,6 +1322,7 @@ body {
             }
             
             function getYearsForMonth(month, mode) {
+                if (mode === "last9") return getRecentComparisonYears();
                 // Group by year using pre-computed month field (no new Date() calls)
                 const yearData = new Map();
                 rows.forEach(row => {
@@ -1440,6 +1453,7 @@ body {
             }
 
             function getYearsForSeason(season, mode) {
+                if (mode === "last9") return getRecentComparisonYears();
                 const yearMeans = [];
                 availableYears.forEach((year) => {
                     const entries = entriesForSeason(year, season);
@@ -1506,6 +1520,7 @@ body {
             }
 
             function getYearsForHexSeason(season, mode) {
+                if (mode === "last9") return getRecentComparisonYears();
                 const yearMeans = [];
                 availableYears.forEach((year) => {
                     const entries = entriesForHexSeason(year, season);
@@ -1541,7 +1556,7 @@ body {
                     const topYearsFiltered = topYears.filter(year => year !== currentYear);
                     defaultYears = [...topYearsFiltered, currentYear];
                 } else {
-                    // Calculate dynamically for coldest or mixed
+                    // Calculate the selected preset dynamically
                     defaultYears = getYearsForMonth(month, state.yearMode);
                 }
                 
@@ -1930,10 +1945,12 @@ body {
                     modeText = "Mildest 9 years";
                 } else if (state.yearMode === "coldest") {
                     modeText = "Coldest 9 years";
+                } else if (state.yearMode === "last9") {
+                    modeText = "Last 9 years";
                 } else {
                     modeText = "Mixed (5 mildest + 4 coldest)";
                 }
-                summaryEl.innerHTML = `<strong>${modeText} for ${monthName} + ${currentYear}</strong>`;
+                summaryEl.innerHTML = `<strong>${modeText} for ${monthName} + ${state.yearMode === "last9" ? latestComparisonYear : currentYear}</strong>`;
                 document.getElementById("forecast-summary").innerHTML = "";
                 
                 // Update monthly year list after rendering
@@ -2017,7 +2034,9 @@ body {
                     }
                 });
 
-                const modeText = state.seasonMode === "mildest"
+                const modeText = state.seasonMode === "last9"
+                    ? `Last 9 years + ${latestComparisonYear}`
+                    : state.seasonMode === "mildest"
                     ? "Mildest 9 years"
                     : state.seasonMode === "coldest"
                         ? "Coldest 9 years"
@@ -2126,7 +2145,9 @@ body {
                     }
                 });
 
-                const modeText = state.hexSeasonMode === "mildest"
+                const modeText = state.hexSeasonMode === "last9"
+                    ? `Last 9 years + ${latestComparisonYear}`
+                    : state.hexSeasonMode === "mildest"
                     ? "Mildest 9 years"
                     : state.hexSeasonMode === "coldest"
                         ? "Coldest 9 years"
