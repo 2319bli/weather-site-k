@@ -18,18 +18,18 @@ test('forecast years reset the annual mean and roll over at midnight UTC', () =>
     assert.equal(defaultYear(years, new Date('2027-01-01T00:00:00Z')), 2027);
     for (const [year, xs, ys] of [[2026, [364,365], [12,10]], [2027, [1,2], [2,3]]]) {
         const series = cumulative([actual, ...future].filter(r => r.year === year), year, 'red', r => r.doy, 'YTD mean');
-        const trace = series.traces.at(-1);
+        const trace = series.traces.find(t => t.name === year + ' forecast (YTD mean)');
         assert.equal(trace.name, year + ' forecast (YTD mean)');
         assert.deepEqual(trace.x, xs);
         assert.deepEqual(trace.y, ys);
     }
-    const winter = cumulative(future, 2027, 'red', r => r.month === 12 ? r.day : 31+r.day, 'Winter mean');
+    const winter = cumulative(future.filter(r => r.month === 1 || r.year === 2026), 2027, 'red', r => r.month === 12 ? r.day : 31+r.day, 'Winter mean');
     assert.deepEqual(winter.traces.map(t => t.x), [[31], [32,33]]);
 });
 
 test('February–December placeholders use calendar-day normals and yield to forecasts and observations', () => {
-    const normals = [row('1991-02-01', 2), row('2020-02-01', 6), row('2021-02-01', 99),
-        row('2000-02-02', 5), row('2000-12-31', 7), row('2000-01-01', 8)];
+    const normals = [row('2017-02-01', 2), row('2026-02-01', 6), row('2016-02-01', 99),
+        row('2020-02-02', 5), row('2020-12-31', 7), row('2020-01-01', 8)];
     const forecasts = [row('2027-01-31', 6), row('2027-02-02', 3)];
     const future = outlook(normals, forecasts);
     assert.deepEqual(future.map(r => [r.month, r.day, r.source, r.value]), [

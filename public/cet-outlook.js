@@ -8,7 +8,7 @@
         }
         const normals = new Map();
         for (const row of observed) {
-            if (row.year < 1991 || row.year > 2020) continue;
+            if (row.year < 2017 || row.year > 2026) continue;
             const key = row.month * 100 + row.day;
             const normal = normals.get(key) || { sum: 0, count: 0 };
             normal.sum += row.value;
@@ -41,7 +41,7 @@
             const outlookYearChanged = row.source && previous && row.year !== previous.year;
             if (!previous || row.source !== previous.source || outlookYearChanged) {
                 const prefix = row.source ? row.year + ' ' + row.source : String(year);
-                const method = row.source === 'projection' ? ' · 1991–2020 daily mean' : '';
+                const method = row.source === 'projection' ? ' · 2017–2026 daily mean' : '';
                 const trace = { x: [], y: [], text: [], mode: 'lines', name: prefix + ' (' + label + ')' + method,
                     line: { color, width: 2, dash: row.source === 'projection' ? 'dash' : row.source ? 'dot' : 'solid' },
                     hovertemplate: '%{text}<br>%{y:.2f}°C<extra>%{fullData.name}</extra>' };

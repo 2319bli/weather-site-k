@@ -113,7 +113,7 @@
                         const previous = series.observed[first - 1] || series.forecast[first - 1];
                         if (previous?.year === points[first].year) points[first - 1] = previous;
                         traces.push({ x, y: points.map(row => row?.value ?? null), type: 'scatter', mode: 'lines+markers',
-                            name: name + (projected ? ' · 1991–2020 daily mean' : ''),
+                            name: name + (projected ? ' · 2017–2026 daily mean' : ''),
                             line: { color: colour, width: 2, dash: projected ? 'dash' : 'dot' },
                             marker: { size: 3 }, connectgaps: false,
                             text: points.map(row => row ? dateLabel(row.iso) + ' · ' + (row.source || 'observed') : ''),
