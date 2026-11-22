@@ -78,5 +78,5 @@ test('sunshine breakdowns retain regional published totals, monthly sums and par
   assert.equal(sunshineBreakdown(uk,'seasons',2026)[3].complete,false);
   assert.equal(sunshineBreakdown(uk,'hex',2026)[5].value,null);
   assert.equal(sunshineBreakdown({records:[{month:'2026-01',value:0}],published:{}},'months',2026)[0].value,0);
-  assert.throws(()=>sunshineBreakdown(uk,'annual',2026),/Choose/);
+  assert.equal(sunshineBreakdown(uk,'annual',2025)[0].value, uk.published[2025].ann);
 });

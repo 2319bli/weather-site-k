@@ -72,3 +72,18 @@ test('rainfall historical periods match independent sums from the full EWP archi
     assert.equal(winter[0].complete, false, 'the archive starts part-way through winter 1931');
     assert.equal(A.history(data, A.period('annual'), 'total').at(-1).complete, false);
 });
+
+test('rainfall projects the full forecast-only year using available 2017–2026 calendar-day observations', () => {
+    const vm = require('node:vm');
+    const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '../public/ewp.html'), 'utf8');
+    const helpers = html.slice(html.indexOf('function monthDayKeyUTC'), html.indexOf('        loadCsvRows(CSV_PATH).then'));
+    const context = { dayOfYear: date => 1 + (date - Date.UTC(date.getUTCFullYear(),0,1)) / 86400000 };
+    vm.runInNewContext(helpers, context);
+    const day = (iso,value) => ({ date: new Date(iso), year: Number(iso.slice(0,4)), value });
+    const rows = [day('2016-01-01',99), day('2017-01-01',0), day('2026-01-01',4), day('2025-12-31',3)];
+    const projected = context.buildProjectionForYear(rows,2027,10).projectedRows;
+    assert.equal(projected[0].value,2);
+    assert.equal(projected.at(-1).value,3);
+    rows.push(day('2027-01-01',6));
+    assert.deepEqual(Array.from(context.buildProjectionForYear(rows,2027,10).projectedRows, row => row.doy),[365]);
+});

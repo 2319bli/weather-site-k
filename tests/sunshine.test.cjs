@@ -95,3 +95,22 @@ test('monthly sunshine commands validate syntax, consecutive months and numeric 
   assert.doesNotThrow(() => validateSunshineUpdates([{month:'2028-02',value:696}]));
   for (const dataset of ['constructor','__proto__','cet']) assert.throws(() => sunshineDataset(dataset));
 });
+
+test('2027 sunshine uses each region’s 2017–2026 averages and replaces estimates with confirmations', async () => {
+  const { SUNSHINE, parseSunshine, sunshineOutlook2027 } = await api;
+  for (const { file } of Object.values(SUNSHINE)) {
+    const data = parseSunshine(source(file.slice(0,-4)));
+    const expected = month => {
+      const sample = data.records.filter(r => r.month >= '2017-01' && r.month <= '2026-12' && r.month.endsWith(month));
+      return sample.reduce((s,r) => s+r.value,0) / sample.length;
+    };
+    const round = n => Math.round(10*n)/10;
+    assert.equal(sunshineOutlook2027(data,'months')[0].value,round(expected('-01')));
+    assert.equal(sunshineOutlook2027(data,'months')[11].value,round(expected('-12')));
+    data.records.push({month:'2026-12',value:10},{month:'2027-01',value:0});
+    const winter = sunshineOutlook2027(data,'seasons')[0];
+    assert.equal(winter.projected,1);
+    assert.equal(winter.value,round(10+expected('-02')));
+    assert.equal(sunshineOutlook2027(data,'annual')[0].projected,11);
+  }
+});

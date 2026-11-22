@@ -124,7 +124,7 @@ export function sunshineHistory(data, kind, key, toDate = false) {
 }
 
 export function sunshineBreakdown(data, kind, year) {
-  if (!['months', 'seasons', 'hex'].includes(kind)) throw new Error('Choose months, seasons or hex seasons for an individual breakdown.');
+  if (!PERIODS[kind]) throw new Error('Unknown sunshine period.');
   const values = new Map(data.records.map(row => [row.month, row.value]));
   return PERIODS[kind].map(period => {
     const months = period.months.map(month => monthKey(year, month));
@@ -134,5 +134,36 @@ export function sunshineBreakdown(data, kind, year) {
     return { label: period.label, year, count: observed.length, expected: months.length, complete,
       start: months[0], end: months.at(-1),
       value: observed.length ? published ?? Math.round(observed.reduce((a,b) => a+b, 0) * 10) / 10 : null };
+  });
+}
+
+// The regional records passed in contain confirmed monthly totals only.
+export function sunshineOutlook2027(data, kind) {
+  const values = new Map(data.records.map(row => [row.month, row.value]));
+  const monthly = Array.from({length: 12}, (_, i) => {
+    const samples = [];
+    for (let year = 2017; year <= 2026; year++) {
+      const value = values.get(monthKey(year, i + 1));
+      if (Number.isFinite(value)) samples.push(value);
+    }
+    return samples.length ? samples.reduce((a,b) => a+b, 0) / samples.length : null;
+  });
+  return sunshineBreakdown(data, kind, 2027).map((row, i) => {
+    if (row.complete) return row;
+    const months = PERIODS[kind][i].months;
+    let value = 0, projected = 0;
+    for (const month of months) {
+      const actual = values.get(monthKey(2027, month));
+      if (actual !== undefined) value += actual;
+      else {
+        const estimate = monthly[(month + 11) % 12];
+        if (estimate === null) continue;
+        projected++;
+        value += estimate;
+      }
+    }
+    const count = row.count + projected;
+    return { ...row, value: count ? Math.round(value * 10) / 10 : null, projected,
+      coverage: row.count + ' confirmed + ' + projected + ' projected months', count, complete: count === months.length };
   });
 }

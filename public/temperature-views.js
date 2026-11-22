@@ -17,7 +17,7 @@
             const rankLabel = rainfall ? 'Wetness rank' : 'Warmth rank';
             const dailyBounds = rainfall ? [['high', 'Wettest daily', '#3985cb']]
                 : [['low', 'Coldest daily', '#3985cb'], ['high', 'Warmest daily', '#d77831']];
-            const archive = A.createArchive(observedRows, window.earlyMonthlyObservations);
+            let archive, rainfallOutlook;
             const modes = {}, recordYears = {}, historyRanges = {};
             const buttons = [...document.querySelectorAll('[data-chart-mode]')];
             const dailyControls = document.getElementById('daily-controls');
@@ -100,6 +100,7 @@
                         hovertemplate: `%{text}<br>${dailyLabel}: %{y:.${precision}f}${unit}<extra>%{fullData.name}</extra>`
                     });
                     // Keep winter's December and January forecasts in separate calendar-year traces.
+                    if (rainfall && series.year !== 2027) continue;
                     const groups = new Map();
                     series.forecast.forEach((row, i) => {
                         if (!row) return;
@@ -211,9 +212,22 @@
             function renderIndividual() {
                 if (!individualPicker) { summary.textContent = 'Refresh the page to load the year comparison controls.'; return; }
                 const available = [...new Set(A.periods(currentView).flatMap(period => A.comparisonYears(archive, period)))].sort((a,b) => b-a);
-                const years = individualPicker.update(available, Number(archive.latest?.slice(0, 4)));
+                if (rainfall && forecastRows.some(row => row.year === 2027) && !available.includes(2027)) available.unshift(2027);
+                const preferred = rainfall && new Date().getUTCFullYear() === 2027 ? 2027 : Number(archive.latest?.slice(0, 4));
+                const years = individualPicker.update(available, preferred);
                 const breakdown = year => A.breakdown(archive, currentView, year, rainfall ? 'total' : 'mean');
-                const series = years.map(year => ({ year, colour: individualPicker.colour(year), rows: breakdown(year) }));
+                const series = years.map(year => {
+                    const rows = breakdown(year);
+                    if (rainfall && year === 2027 && forecastRows.length) {
+                        rainfallOutlook ??= A.createArchive([...observedRows.filter(row => row.year >= 2026), ...forecastRows]);
+                        const filled = A.breakdown(rainfallOutlook, currentView, year, 'total');
+                        rows.forEach((row, i) => {
+                            const projected = filled[i].days - row.days;
+                            if (projected > 0) rows[i] = { ...filled[i], projected, coverage: row.days + ' observed + ' + projected + ' projected days' };
+                        });
+                    }
+                    return { year, colour: individualPicker.colour(year), rows };
+                });
                 const rows = series.flatMap(series => series.rows);
                 const average = individualPicker.averageEnabled() ? window.IndividualComparison.averageSeries(breakdown, getComputedStyle(document.documentElement).getPropertyValue('--text-body').trim()) : null;
                 if (average) series.push(average);
@@ -224,7 +238,7 @@
                     type: 'category', categoryorder: 'array', categoryarray: categories, tickangle: 0,
                     tickfont: { size: mobile.matches ? 9 : 12 }
                 }, rainfall ? 'Total rainfall (mm)' : 'Mean temperature (°C)');
-                summary.textContent = `${series.filter(series => !series.average).map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}. Observations only.${currentView === 'seasons' ? ' Winter includes the preceding December.' : ''}`;
+                summary.textContent = `${series.filter(series => !series.average).map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}. ${rows.some(row => row.projected) ? "2027 includes projected rainfall (2017–2026 daily means)." : "Observations only."}${currentView === 'seasons' ? ' Winter includes the preceding December.' : ''}`;
                 if (average) summary.textContent += ` ${window.IndividualComparison.averageNote(average)}`;
                 if (rows.some(row => row.days && !row.complete)) summary.textContent += rainfall
                     ? ' Hatched bars show incomplete totals.' : ' Hollow diamonds show means for incomplete periods.';
@@ -254,6 +268,7 @@
                     });
                     extra.replaceChildren();
                     if (mode === 'cumulative') return false;
+                    archive ??= A.createArchive(observedRows, window.earlyMonthlyObservations);
                     if (forecastSummary) forecastSummary.textContent = '';
                     if (mode === 'individual') { renderIndividual(); return true; }
                     const period = A.period(view, selection);

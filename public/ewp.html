@@ -252,9 +252,9 @@ body {
     <link rel="icon" href="logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="temperature.css?v=views-6">
     <script src="data/ewp-early.js"></script>
-    <script src="temperature-data.js?v=monthly-2"></script>
+    <script src="temperature-data.js?v=outlook-1"></script>
     <script src="individual-comparison.js?v=monthly-1"></script>
-    <script src="temperature-views.js?v=monthly-2"></script>
+    <script src="temperature-views.js?v=years-27"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -713,20 +713,23 @@ body {
 
         function entriesForSeason(year, season, rows) {
             return rows
-                .filter((row) => seasonYearForDate(new Date(row.date), season) === year)
+                .filter((row) => seasonYearForDate(row.date, season) === year)
                 .slice()
                 .sort((a, b) => seasonDayIndex(new Date(a.date), season) - seasonDayIndex(new Date(b.date), season));
         }
 
         function getSeasonPresetYears(rows, season, mode) {
-            const yearTotals = [];
-            const years = new Set(rows.map((row) => seasonYearForDate(new Date(row.date), season)).filter(Boolean));
-            years.forEach((year) => {
-                const entries = entriesForSeason(year, season, rows);
-                if (!entries.length) return;
-                yearTotals.push({ year, total: entries.reduce((sum, entry) => sum + entry.value, 0) });
-            });
-            return rankedYearsFromTotals(yearTotals, mode);
+            return rankedPeriodYears(rows, season, mode, seasonYearForDate);
+        }
+
+        function rankedPeriodYears(rows, season, mode, yearForDate) {
+            const totals = new Map();
+            const currentYear = new Date().getUTCFullYear();
+            for (const row of rows) {
+                const year = yearForDate(row.date, season);
+                if (year && year <= currentYear) totals.set(year, (totals.get(year) || 0) + row.value);
+            }
+            return rankedYearsFromTotals([...totals].map(([year, total]) => ({year, total})), mode);
         }
 
         const HEX_SEASONS = {
@@ -765,20 +768,13 @@ body {
 
         function entriesForHexSeason(year, season, rows) {
             return rows
-                .filter((row) => hexSeasonYearForDate(new Date(row.date), season) === year)
+                .filter((row) => hexSeasonYearForDate(row.date, season) === year)
                 .slice()
                 .sort((a, b) => hexSeasonDayIndex(new Date(a.date), season) - hexSeasonDayIndex(new Date(b.date), season));
         }
 
         function getHexSeasonPresetYears(rows, season, mode) {
-            const yearTotals = [];
-            const years = new Set(rows.map((row) => hexSeasonYearForDate(new Date(row.date), season)).filter(Boolean));
-            years.forEach((year) => {
-                const entries = entriesForHexSeason(year, season, rows);
-                if (!entries.length) return;
-                yearTotals.push({ year, total: entries.reduce((sum, entry) => sum + entry.value, 0) });
-            });
-            return rankedYearsFromTotals(yearTotals, mode);
+            return rankedPeriodYears(rows, season, mode, hexSeasonYearForDate);
         }
 
         function toDateKeyUTC(date) {
@@ -794,9 +790,8 @@ body {
             return m + "-" + d;
         }
 
-        function buildProjectionForYear(rows, targetYear, lookbackYears) {
-            const previousStart = targetYear - lookbackYears;
-            const priorRows = rows.filter((r) => r.year >= previousStart && r.year < targetYear);
+        function buildProjectionForYear(rows, targetYear, lookbackYears, previousStart = targetYear - lookbackYears) {
+            const priorRows = rows.filter((r) => r.year >= previousStart && r.year < previousStart + lookbackYears);
             if (!priorRows.length) {
                 return { lastActualDate: null, projectedRows: [] };
             }
@@ -815,17 +810,19 @@ body {
                 .filter((r) => r.year === targetYear)
                 .slice()
                 .sort((a, b) => a.date - b.date);
-            if (!actualRows.length) {
-                return { lastActualDate: null, projectedRows: [] };
-            }
 
-            const lastActualDate = new Date(actualRows[actualRows.length - 1].date);
+
+            const lastActualDate = actualRows.at(-1)?.date ?? null;
             const projectedRows = [];
-            let cursor = new Date(Date.UTC(targetYear, lastActualDate.getUTCMonth(), lastActualDate.getUTCDate() + 1));
+            let cursor = lastActualDate ? new Date(+lastActualDate + 86400000) : new Date(Date.UTC(targetYear, 0, 1));
             const endOfYear = new Date(Date.UTC(targetYear, 11, 31));
             while (cursor <= endOfYear) {
                 const key = monthDayKeyUTC(cursor);
                 const values = byMonthDay.get(key);
+                if (!values && lookbackYears === 10) {
+                    cursor.setUTCDate(cursor.getUTCDate() + 1);
+                    continue;
+                }
                 const mean = values && values.length
                     ? values.reduce((s, v) => s + v, 0) / values.length
                     : overallMean;
@@ -862,10 +859,19 @@ body {
                 seasonYears: null,
                 hexSeasonYears: null,
                 latestYear,
-                projection: null
+
             };
             state.years.sort((a, b) => b - a);
-            state.projection = buildProjectionForYear(state.rows, state.latestYear, 30);
+            const projected2027 = buildProjectionForYear(rows, 2027, 10).projectedRows;
+            const currentProjection = latestYear === 2027 ? projected2027 : buildProjectionForYear(rows, latestYear, 30).projectedRows;
+            // Winter 2027 also needs December 2026 until its observations arrive.
+            const winterBridge = latestYear <= 2026 ? buildProjectionForYear(rows, 2026, 10, 2017).projectedRows.filter(row => row.date.getUTCMonth() === 11) : [];
+            const outlook2027 = winterBridge.concat(projected2027).map(row => ({ ...row, source: "projection" }));
+            if (projected2027.length) availableYears.add(2027);
+            const projectionRows = year => year === 2027 ? outlook2027 : year === latestYear ? currentProjection : [];
+            const projectionLabel = year => year + (year === 2027 ? " projection (2017–2026 daily mean)" : " projection (30y day-mean)");
+            const dateFormat = new Intl.DateTimeFormat("en-GB", {day:"2-digit", month:"short", year:"numeric", timeZone:"UTC"});
+
 
             const chartEl = document.getElementById("chart");
             const summaryEl = document.getElementById("target-summary");
@@ -888,7 +894,7 @@ body {
             const formHexSeason = document.getElementById("year-form-hex-season");
             const inputHexSeason = document.getElementById("year-input-hex-season");
             const errorElHexSeason = document.getElementById("year-error-hex-season");
-            const alternateViews = WeatherViews.create(rows, [], chartEl, summaryEl, COLOR_PALETTE, () => {
+            const alternateViews = WeatherViews.create(rows, outlook2027, chartEl, summaryEl, COLOR_PALETTE, () => {
                 if (state.currentView === "annual") renderAnnualChart();
                 else if (state.currentView === "months") renderMonthlyChart();
                 else if (state.currentView === "seasons") renderSeasonChart();
@@ -1015,7 +1021,8 @@ body {
                 let projectionText = "";
                 selectedYears.forEach((year, idx) => {
                     const entries = (byYear.get(year) || []).slice().sort((a, b) => a.date - b.date);
-                    if (!entries.length) {
+                    const projectedRows = projectionRows(year).filter(row => row.year === year);
+                    if (!entries.length && !projectedRows.length) {
                         targetValues.push({ year, value: null });
                         return;
                     }
@@ -1025,10 +1032,8 @@ body {
                         return { ...entry, ytd: cumulative, isProjected: false };
                     });
 
-                    const isLatestYear = year === state.latestYear;
-                    const projectedRows = isLatestYear && state.projection ? state.projection.projectedRows : [];
 
-                    if (isLatestYear && projectedRows && projectedRows.length) {
+                    if (projectedRows.length) {
                         const projectedPoints = [];
                         let projectedCumulative = cumulative;
                         projectedRows.forEach((entry) => {
@@ -1036,27 +1041,27 @@ body {
                             projectedPoints.push({ ...entry, ytd: projectedCumulative, isProjected: true });
                         });
 
-                        traces.push({
+                        if (points.length) traces.push({
                             x: points.map((p) => p.doy),
                             y: points.map((p) => p.ytd),
                             mode: "lines",
                             name: year + " (YTD total)",
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2 },
                             customdata: points.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.ytd.toFixed(1)
                             })),
                             hovertemplate: "%{customdata.label}<br>YTD precipitation: %{customdata.formatted} mm<extra></extra>"
                         });
 
                         traces.push({
-                            x: [points[points.length - 1].doy, ...projectedPoints.map((p) => p.doy)],
-                            y: [points[points.length - 1].ytd, ...projectedPoints.map((p) => p.ytd)],
+                            x: [...points.slice(-1), ...projectedPoints].map(p => p.doy),
+                            y: [...points.slice(-1), ...projectedPoints].map(p => p.ytd),
                             mode: "lines",
-                            name: year + " projection (30y day-mean)",
+                            name: projectionLabel(year),
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2, dash: "dot" },
-                            customdata: [points[points.length - 1], ...projectedPoints].map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                            customdata: [...points.slice(-1), ...projectedPoints].map((p) => ({
+                                label: dateFormat.format(p.date),
                                 formatted: p.ytd.toFixed(1),
                                 projected: p.isProjected ? "Yes" : "No"
                             })),
@@ -1064,7 +1069,7 @@ body {
                         });
 
                         const projectedEnd = projectedPoints[projectedPoints.length - 1];
-                        projectionText = "<br><strong>" + year + " projected year-end total: " + projectedEnd.ytd.toFixed(1) + " mm</strong>";
+                        projectionText += "<br><strong>" + year + " projected year-end total: " + projectedEnd.ytd.toFixed(1) + " mm</strong>";
                         const target = [...points, ...projectedPoints].find((p) => p.doy === targetDoy);
                         targetValues.push({ year, value: target ? target.ytd : null });
                     } else {
@@ -1075,7 +1080,7 @@ body {
                             name: year + " (YTD total)",
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2 },
                             customdata: points.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.ytd.toFixed(1)
                             })),
                             hovertemplate: "%{customdata.label}<br>YTD precipitation: %{customdata.formatted} mm<extra></extra>"
@@ -1139,13 +1144,7 @@ body {
                         .filter((row) => row.year === year && (new Date(row.date).getUTCMonth() + 1) === state.selectedMonth)
                         .slice()
                         .sort((a, b) => a.date - b.date);
-                    const isLatestYear = year === state.latestYear;
-                    const projectedMonthEntries = isLatestYear && state.projection
-                        ? state.projection.projectedRows
-                            .filter((row) => (new Date(row.date).getUTCMonth() + 1) === state.selectedMonth)
-                            .slice()
-                            .sort((a, b) => a.date - b.date)
-                        : [];
+                    const projectedMonthEntries = projectionRows(year).filter(row => row.year === year && row.date.getUTCMonth() + 1 === state.selectedMonth);
                     if (!entries.length && !projectedMonthEntries.length) return;
 
                     let cumulative = 0;
@@ -1169,7 +1168,7 @@ body {
                                 name: year + " (" + MONTH_NAMES[state.selectedMonth - 1] + " total)",
                                 line: { color: COLOR_PALETTE[idx] || "#999", width: 2 },
                                 customdata: points.map((p) => ({
-                                    label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                    label: dateFormat.format(p.date),
                                     formatted: p.monthlyCumulative.toFixed(1)
                                 })),
                                 hovertemplate: "%{customdata.label}<br>Month cumulative: %{customdata.formatted} mm<extra></extra>"
@@ -1179,7 +1178,7 @@ body {
                         const connectorX = points.length ? [new Date(points[points.length - 1].date).getUTCDate()] : [];
                         const connectorY = points.length ? [points[points.length - 1].monthlyCumulative] : [];
                         const connectorCustom = points.length ? [{
-                            label: new Date(points[points.length - 1].date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                            label: dateFormat.format(points[points.length - 1].date),
                             formatted: points[points.length - 1].monthlyCumulative.toFixed(1),
                             projected: "No"
                         }] : [];
@@ -1188,10 +1187,10 @@ body {
                             x: [...connectorX, ...projectedPoints.map((p) => new Date(p.date).getUTCDate())],
                             y: [...connectorY, ...projectedPoints.map((p) => p.monthlyCumulative)],
                             mode: "lines",
-                            name: year + " projection (30y day-mean)",
+                            name: projectionLabel(year),
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2, dash: "dot" },
                             customdata: [...connectorCustom, ...projectedPoints.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.monthlyCumulative.toFixed(1),
                                 projected: "Yes"
                             }))],
@@ -1205,7 +1204,7 @@ body {
                             name: year + " (" + MONTH_NAMES[state.selectedMonth - 1] + " total)",
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2 },
                             customdata: points.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.monthlyCumulative.toFixed(1)
                             })),
                             hovertemplate: "%{customdata.label}<br>Month cumulative: %{customdata.formatted} mm<extra></extra>"
@@ -1239,16 +1238,15 @@ body {
                 const season = state.selectedSeason;
                 const seasonInfo = SEASONS[season];
                 const hasSeasonData = (year) => entriesForSeason(year, season, state.rows).length ||
-                    (year === state.latestYear && state.projection && entriesForSeason(year, season, state.projection.projectedRows).length);
+                    entriesForSeason(year, season, projectionRows(year)).length;
                 if (state.seasonYears === null) {
                     state.seasonYears = getSeasonPresetYears(state.rows, season, state.seasonMode)
                         .filter((y) => hasSeasonData(y));
                     state.seasonYears.sort((a, b) => b - a);
                 }
 
-                const fallbackYears = getSeasonPresetYears(state.rows, season, state.seasonMode)
-                    .filter((y) => hasSeasonData(y));
-                const yearsToShow = state.seasonYears.length ? state.seasonYears : fallbackYears;
+                const yearsToShow = state.seasonYears.length ? state.seasonYears :
+                    getSeasonPresetYears(state.rows, season, state.seasonMode).filter(hasSeasonData);
                 renderSeasonYearList();
                 if (alternateViews.render("seasons", season, yearsToShow)) return;
 
@@ -1256,9 +1254,7 @@ body {
 
                 yearsToShow.forEach((year, idx) => {
                     const entries = entriesForSeason(year, season, state.rows);
-                    const projectedSeasonEntries = year === state.latestYear && state.projection
-                        ? entriesForSeason(year, season, state.projection.projectedRows)
-                        : [];
+                    const projectedSeasonEntries = entriesForSeason(year, season, projectionRows(year));
                     if (!entries.length && !projectedSeasonEntries.length) return;
 
                     let cumulative = 0;
@@ -1275,7 +1271,7 @@ body {
                             name: year + " (" + seasonInfo.label + " total)",
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2 },
                             customdata: points.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.seasonCumulative.toFixed(1)
                             })),
                             hovertemplate: "%{customdata.label}<br>Season cumulative: %{customdata.formatted} mm<extra></extra>"
@@ -1291,7 +1287,7 @@ body {
                         const connectorX = points.length ? [seasonDayIndex(new Date(points[points.length - 1].date), season)] : [];
                         const connectorY = points.length ? [points[points.length - 1].seasonCumulative] : [];
                         const connectorCustom = points.length ? [{
-                            label: new Date(points[points.length - 1].date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                            label: dateFormat.format(points[points.length - 1].date),
                             formatted: points[points.length - 1].seasonCumulative.toFixed(1),
                             projected: "No"
                         }] : [];
@@ -1299,10 +1295,10 @@ body {
                             x: [...connectorX, ...projectedPoints.map((p) => seasonDayIndex(new Date(p.date), season))],
                             y: [...connectorY, ...projectedPoints.map((p) => p.seasonCumulative)],
                             mode: "lines",
-                            name: year + " projection (30y day-mean)",
+                            name: projectionLabel(year),
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2, dash: "dot" },
                             customdata: [...connectorCustom, ...projectedPoints.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.seasonCumulative.toFixed(1),
                                 projected: "Yes"
                             }))],
@@ -1343,16 +1339,15 @@ body {
                 const season = state.selectedHexSeason;
                 const seasonInfo = HEX_SEASONS[season];
                 const hasHexSeasonData = (year) => entriesForHexSeason(year, season, state.rows).length ||
-                    (year === state.latestYear && state.projection && entriesForHexSeason(year, season, state.projection.projectedRows).length);
+                    entriesForHexSeason(year, season, projectionRows(year)).length;
                 if (state.hexSeasonYears === null) {
                     state.hexSeasonYears = getHexSeasonPresetYears(state.rows, season, state.hexSeasonMode)
                         .filter((y) => hasHexSeasonData(y));
                     state.hexSeasonYears.sort((a, b) => b - a);
                 }
 
-                const fallbackYears = getHexSeasonPresetYears(state.rows, season, state.hexSeasonMode)
-                    .filter((y) => hasHexSeasonData(y));
-                const yearsToShow = state.hexSeasonYears.length ? state.hexSeasonYears : fallbackYears;
+                const yearsToShow = state.hexSeasonYears.length ? state.hexSeasonYears :
+                    getHexSeasonPresetYears(state.rows, season, state.hexSeasonMode).filter(hasHexSeasonData);
                 renderHexSeasonYearList();
                 if (alternateViews.render("hex-seasons", season, yearsToShow)) return;
 
@@ -1360,9 +1355,7 @@ body {
 
                 yearsToShow.forEach((year, idx) => {
                     const entries = entriesForHexSeason(year, season, state.rows);
-                    const projectedHexEntries = year === state.latestYear && state.projection
-                        ? entriesForHexSeason(year, season, state.projection.projectedRows)
-                        : [];
+                    const projectedHexEntries = entriesForHexSeason(year, season, projectionRows(year));
                     if (!entries.length && !projectedHexEntries.length) return;
 
                     let cumulative = 0;
@@ -1379,7 +1372,7 @@ body {
                             name: year + " (" + seasonInfo.label + " total)",
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2 },
                             customdata: points.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.hexSeasonCumulative.toFixed(1)
                             })),
                             hovertemplate: "%{customdata.label}<br>Hex-season cumulative: %{customdata.formatted} mm<extra></extra>"
@@ -1395,7 +1388,7 @@ body {
                         const connectorX = points.length ? [hexSeasonDayIndex(new Date(points[points.length - 1].date), season)] : [];
                         const connectorY = points.length ? [points[points.length - 1].hexSeasonCumulative] : [];
                         const connectorCustom = points.length ? [{
-                            label: new Date(points[points.length - 1].date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                            label: dateFormat.format(points[points.length - 1].date),
                             formatted: points[points.length - 1].hexSeasonCumulative.toFixed(1),
                             projected: "No"
                         }] : [];
@@ -1403,10 +1396,10 @@ body {
                             x: [...connectorX, ...projectedPoints.map((p) => hexSeasonDayIndex(new Date(p.date), season))],
                             y: [...connectorY, ...projectedPoints.map((p) => p.hexSeasonCumulative)],
                             mode: "lines",
-                            name: year + " projection (30y day-mean)",
+                            name: projectionLabel(year),
                             line: { color: COLOR_PALETTE[idx] || "#999", width: 2, dash: "dot" },
                             customdata: [...connectorCustom, ...projectedPoints.map((p) => ({
-                                label: new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                                label: dateFormat.format(p.date),
                                 formatted: p.hexSeasonCumulative.toFixed(1),
                                 projected: "Yes"
                             }))],
@@ -1578,7 +1571,7 @@ body {
                     return;
                 }
                 const hasSeasonData = entriesForSeason(year, state.selectedSeason, state.rows).length ||
-                    (year === state.latestYear && state.projection && entriesForSeason(year, state.selectedSeason, state.projection.projectedRows).length);
+                    entriesForSeason(year, state.selectedSeason, projectionRows(year)).length;
                 if (!hasSeasonData) {
                     errorElSeason.textContent = "Year not found in season.";
                     return;
@@ -1608,7 +1601,7 @@ body {
                     return;
                 }
                 const hasHexSeasonData = entriesForHexSeason(year, state.selectedHexSeason, state.rows).length ||
-                    (year === state.latestYear && state.projection && entriesForHexSeason(year, state.selectedHexSeason, state.projection.projectedRows).length);
+                    entriesForHexSeason(year, state.selectedHexSeason, projectionRows(year)).length;
                 if (!hasHexSeasonData) {
                     errorElHexSeason.textContent = "Year not found in hex-season.";
                     return;

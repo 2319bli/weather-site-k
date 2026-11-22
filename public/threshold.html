@@ -335,7 +335,7 @@ body {
                     <button type="button" class="mode-button-annual" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Mixed (5 most + 4 fewest)
                     </button>
-                    <button type="button" class="mode-button-annual" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="2026 and 2017–2025">
+                    <button type="button" class="mode-button-annual" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Current year and the previous nine years">
                         Last 9 years
                     </button>
                 </div>
@@ -404,7 +404,7 @@ body {
         </aside>
     </div>
     <p class="caption">
-        Data: <code>MeanTempCET.csv</code> (daily means). Days with mean ≥ threshold are counted inclusively, matching <code>temperature_analysis.py</code>. Optional <code>forecast_2026.csv</code> extends 2026 as a dotted segment after the reference date when present.
+        Data: <code>MeanTempCET.csv</code> (daily means). Days with mean ≥ threshold are counted inclusively, matching <code>temperature_analysis.py</code>. Dotted lines count days from the CET forecast feed.
     </p>
 
     <script>
@@ -503,6 +503,8 @@ body {
             return shapes;
         }
 
+        const dateFormat = new Intl.DateTimeFormat("en-GB", {day:"2-digit", month:"short", year:"numeric", timeZone:"UTC"});
+
         function countDaysAboveInYear(rows, year, threshold) {
             return rows.filter((r) => r.year === year && r.value >= threshold).length;
         }
@@ -516,11 +518,11 @@ body {
         function getYearsAnnualPreset(mode, rows, threshold, availableYears, currentYear, maxYears) {
             const stats = [];
             availableYears.forEach((y) => {
-                if (y === 2026) return;
-                stats.push({ year: y, count: countDaysAboveInYear(rows, y, threshold) });
+                if (y >= currentYear) return;
+                stats.push({ year: y, count: countDaysAboveInYear(rows.get(y), y, threshold) });
             });
             if (mode === "last9") {
-                const LAST9 = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017];
+                const LAST9 = Array.from({length: maxYears}, (_, i) => currentYear - i);
                 return LAST9.filter((y) => availableYears.has(y)).slice(0, maxYears);
             }
             if (mode === "most") {
@@ -543,7 +545,8 @@ body {
         function getYearsMonthlyPreset(month, mode, rows, threshold, availableYears, currentYear, maxYears) {
             const stats = [];
             availableYears.forEach((y) => {
-                stats.push({ year: y, count: countDaysAboveInMonth(rows, y, month, threshold) });
+                if (y >= currentYear) return;
+                stats.push({ year: y, count: countDaysAboveInMonth(rows.get(y), y, month, threshold) });
             });
             if (mode === "most") {
                 stats.sort((a, b) => b.count - a.count || a.year - b.year);
@@ -573,24 +576,24 @@ body {
         Promise.all([
             loadCsvRows(CSV_PATH),
             loadCsvRows(FORECAST_2026_PATH).catch(() => [])
-        ]).then(([rows, forecast2026Rows]) => {
-            const observedRows = rows.slice();
-            const currentYear = new Date().getUTCFullYear();
-            TARGET_DATE = latestDateForYear(observedRows, 2026) ||
-                latestDateForYear(observedRows, currentYear) ||
-                (observedRows.length ? new Date(observedRows[observedRows.length - 1].date) : new Date());
-            const availableYears = new Set(rows.map((r) => r.year));
-            if (forecast2026Rows.length > 0) {
-                availableYears.add(2026);
-                rows = rows.concat(forecast2026Rows);
+        ]).then(([observations, forecasts]) => {
+            TARGET_DATE = new Date(observations.reduce((latest, row) => Math.max(latest, +row.date), 0));
+            const future = new Map(forecasts.filter(row => row.date > TARGET_DATE).map(row => [+row.date, row]));
+            const rows = observations.concat([...future.values()]).sort((a,b) => a.date - b.date);
+            const byYear = new Map();
+            for (const row of rows) {
+                if (!byYear.has(row.year)) byYear.set(row.year, []);
+                byYear.get(row.year).push(row);
             }
-
+            const availableYears = new Set(byYear.keys());
+            const currentYear = Math.max(...[...availableYears].filter(year => year <= new Date().getUTCFullYear()));
+            const defaultYears = [...new Set([currentYear, ...DEFAULT_YEARS])].filter(y => availableYears.has(y)).slice(0, MAX_YEARS);
             const state = {
                 rows,
-                forecast2026: forecast2026Rows,
                 threshold: 15,
-                years: DEFAULT_YEARS.slice(0, MAX_YEARS).filter((y) => availableYears.has(y)),
+                years: defaultYears.slice(),
                 monthlyYears: null,
+                monthlyYearsCustom: false,
                 currentView: "annual",
                 selectedMonth: 12,
                 yearMode: "most",
@@ -622,7 +625,7 @@ body {
                 const t = getThreshold();
                 state.years = getYearsAnnualPreset(
                     state.annualYearMode,
-                    state.rows,
+                    byYear,
                     t,
                     availableYears,
                     currentYear,
@@ -638,7 +641,7 @@ body {
                 }
                 if (state.currentView === "annual") renderChart();
                 else {
-                    state.monthlyYears = null;
+                    if (!state.monthlyYearsCustom) state.monthlyYears = null;
                     renderMonthlyChart();
                 }
             });
@@ -665,7 +668,7 @@ body {
 
             monthSelect.addEventListener("change", () => {
                 state.selectedMonth = parseInt(monthSelect.value, 10);
-                state.monthlyYears = null;
+                if (!state.monthlyYearsCustom) state.monthlyYears = null;
                 if (state.currentView === "months") renderMonthlyChart();
             });
 
@@ -682,6 +685,7 @@ body {
                 btn.addEventListener("click", () => {
                     state.yearMode = btn.dataset.mode;
                     updateModeButtons();
+                    state.monthlyYearsCustom = false;
                     state.monthlyYears = null;
                     if (state.currentView === "months") renderMonthlyChart();
                 });
@@ -709,32 +713,20 @@ body {
             });
             updateAnnualModeButtons();
 
-            function entriesForYearFull2026(year, allRows, forecastRows) {
-                if (year !== 2026) return allRows.filter((r) => r.year === year).sort((a, b) => a.date - b.date);
-                const forecastDates = new Set((forecastRows || []).map((e) => e.date.getTime()));
-                const actual = allRows.filter((r) => r.year === 2026 && !forecastDates.has(r.date.getTime()));
-                const dataMap = new Map();
-                actual.forEach((e) => dataMap.set(e.date.getTime(), e));
-                (forecastRows || []).forEach((e) => {
-                    if (!dataMap.has(e.date.getTime())) dataMap.set(e.date.getTime(), e);
-                });
-                return Array.from(dataMap.values()).sort((a, b) => a.date - b.date);
-            }
-
             function renderChart() {
                 const threshold = getThreshold();
                 let YEARS = state.years.length
                     ? state.years
-                    : DEFAULT_YEARS.slice(0, MAX_YEARS).filter((y) => availableYears.has(y));
+                    : defaultYears.slice();
                 const targetDoy = dayOfYear(TARGET_DATE);
                 const traces = [];
                 const endCounts = [];
 
                 YEARS.forEach((year, idx) => {
                     const color = COLOR_PALETTE[idx] || "#999";
-                    const allEntries = entriesForYearFull2026(year, state.rows, state.forecast2026);
+                    const allEntries = (byYear.get(year) || []);
 
-                    if (year === 2026 && state.forecast2026 && state.forecast2026.length) {
+                    if (allEntries.some(row => row.date > TARGET_DATE)) {
                         const confirmed = allEntries.filter((e) => e.date <= TARGET_DATE);
                         const forecastOnly = allEntries.filter((e) => e.date > TARGET_DATE);
                         const confPts = cumulativePointsFromEntries(confirmed, threshold);
@@ -746,18 +738,14 @@ body {
                                 name: `${year} (cumulative)`,
                                 line: { color, width: 2 },
                                 customdata: confPts.map((p) => ({
-                                    label: p.date.toLocaleDateString("en-GB", {
-                                        day: "2-digit",
-                                        month: "short",
-                                        year: "numeric"
-                                    }),
+                                    label: dateFormat.format(p.date),
                                     cum: p.cum
                                 })),
                                 hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
                             });
                         }
-                        if (forecastOnly.length && confPts.length) {
-                            let acc = confPts[confPts.length - 1].cum;
+                        if (forecastOnly.length) {
+                            let acc = confPts.at(-1)?.cum ?? 0;
                             const fcLine = forecastOnly.map((e) => {
                                 if (e.value >= threshold) acc += 1;
                                 return { ...e, cum: acc };
@@ -769,11 +757,7 @@ body {
                                 name: `${year} forecast (cumulative)`,
                                 line: { color, width: 2, dash: "dot" },
                                 customdata: fcLine.map((p) => ({
-                                    label: p.date.toLocaleDateString("en-GB", {
-                                        day: "2-digit",
-                                        month: "short",
-                                        year: "numeric"
-                                    }),
+                                    label: dateFormat.format(p.date),
                                     cum: p.cum
                                 })),
                                 hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
@@ -798,11 +782,7 @@ body {
                         name: `${year} (cumulative)`,
                         line: { color, width: 2 },
                         customdata: pts.map((p) => ({
-                            label: p.date.toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric"
-                            }),
+                            label: dateFormat.format(p.date),
                             cum: p.cum
                         })),
                         hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
@@ -825,11 +805,8 @@ body {
                     summaryLines.join("<br>") +
                     `<br><small>Green vertical line: ${td} ${tm} (day of year ${targetDoy}).</small>`;
 
-                const pt = endCounts.find((e) => e.year === 2026);
-                forecastSummaryEl.innerHTML =
-                    pt && pt.cum !== null && state.forecast2026.length
-                        ? `<strong>2026 includes forecast after ${td} ${tm} where applicable (dotted).</strong>`
-                        : "";
+                forecastSummaryEl.textContent = traces.some(trace => trace.line.dash === "dot")
+                    ? "Dotted lines include forecast days." : "";
 
                 const monthStarts = Array.from({ length: 12 }, (_, i) =>
                     dayOfYear(new Date(Date.UTC(2025, i, 1)))
@@ -862,10 +839,10 @@ body {
                 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                 const monthName = monthNames[month - 1];
 
-                let defaultYears = getYearsMonthlyPreset(
+                let defaultYears = state.monthlyYears?.length ? state.monthlyYears : getYearsMonthlyPreset(
                     month,
                     state.yearMode,
-                    state.rows,
+                    byYear,
                     threshold,
                     availableYears,
                     currentYear,
@@ -884,7 +861,7 @@ body {
 
                 YEARS.forEach((year, idx) => {
                     const color = COLOR_PALETTE[idx] || "#999";
-                    let entries = entriesForYearFull2026(year, state.rows, state.forecast2026).filter(
+                    let entries = (byYear.get(year) || []).filter(
                         (r) => r.month === month
                     );
                     if (!entries.length) {
@@ -892,7 +869,7 @@ body {
                         return;
                     }
 
-                    if (year === 2026 && state.forecast2026.length) {
+                    if (entries.some(row => row.date > TARGET_DATE)) {
                         const confirmed = entries.filter((e) => e.date <= TARGET_DATE);
                         const forecastOnly = entries.filter((e) => e.date > TARGET_DATE);
                         const confPts = cumulativePointsFromEntries(confirmed, threshold);
@@ -904,18 +881,14 @@ body {
                                 name: `${year} (${monthName})`,
                                 line: { color, width: 2 },
                                 customdata: confPts.map((p) => ({
-                                    label: p.date.toLocaleDateString("en-GB", {
-                                        day: "2-digit",
-                                        month: "short",
-                                        year: "numeric"
-                                    }),
+                                    label: dateFormat.format(p.date),
                                     cum: p.cum
                                 })),
                                 hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
                             });
                         }
-                        if (forecastOnly.length && confPts.length) {
-                            let acc = confPts[confPts.length - 1].cum;
+                        if (forecastOnly.length) {
+                            let acc = confPts.at(-1)?.cum ?? 0;
                             const fcLine = forecastOnly.map((e) => {
                                 if (e.value >= threshold) acc += 1;
                                 return { ...e, cum: acc };
@@ -927,11 +900,7 @@ body {
                                 name: `${year} forecast (${monthName})`,
                                 line: { color, width: 2, dash: "dot" },
                                 customdata: fcLine.map((p) => ({
-                                    label: p.date.toLocaleDateString("en-GB", {
-                                        day: "2-digit",
-                                        month: "short",
-                                        year: "numeric"
-                                    }),
+                                    label: dateFormat.format(p.date),
                                     cum: p.cum
                                 })),
                                 hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
@@ -951,11 +920,7 @@ body {
                         name: `${year} (${monthName})`,
                         line: { color, width: 2 },
                         customdata: pts.map((p) => ({
-                            label: p.date.toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric"
-                            }),
+                            label: dateFormat.format(p.date),
                             cum: p.cum
                         })),
                         hovertemplate: "%{customdata.label}<br>Days ≥ " + threshold + "°C: %{customdata.cum}<extra></extra>"
@@ -1044,6 +1009,7 @@ body {
                     btn.type = "button";
                     btn.textContent = "×";
                     btn.addEventListener("click", () => {
+                        state.monthlyYearsCustom = true;
                         state.monthlyYears = state.monthlyYears.filter((y) => y !== year);
                         renderMonthlyYearList();
                         if (state.currentView === "months") renderMonthlyChart();
@@ -1103,6 +1069,7 @@ body {
                         if (errorElMonthly) errorElMonthly.textContent = "Maximum of 10 years.";
                         return;
                     }
+                    state.monthlyYearsCustom = true;
                     state.monthlyYears.push(year);
                     state.monthlyYears.sort((a, b) => b - a);
                     renderMonthlyYearList();

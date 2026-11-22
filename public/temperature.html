@@ -256,7 +256,7 @@ body {
     <script src="cet-outlook.js?v=outlook-3"></script>
     <script src="temperature-data.js?v=outlook-1"></script>
     <script src="individual-comparison.js?v=monthly-1"></script>
-    <script src="temperature-views.js?v=outlook-3"></script>
+    <script src="temperature-views.js?v=years-27"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -623,6 +623,8 @@ body {
             return null;
         }
 
+        const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
         async function loadCsvRows(path) {
             const response = await fetch(path, { cache: "default" });
             if (!response.ok) {
@@ -653,7 +655,7 @@ body {
                     day,
                     doy: dayOfYear(date),
                     // Pre-compute hover label once instead of per render
-                    label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+                    label: String(day).padStart(2, "0") + " " + shortMonths[month - 1] + " " + date.getUTCFullYear()
                 };
             }).filter(Boolean);
         }

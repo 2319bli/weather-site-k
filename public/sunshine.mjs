@@ -1,4 +1,4 @@
-import { SUNSHINE, PERIODS, MONTHS, sunshineHistory, sunshineBreakdown } from './sunshine-data.mjs?v=2';
+import { SUNSHINE, PERIODS, MONTHS, sunshineHistory, sunshineBreakdown, sunshineOutlook2027 } from './sunshine-data.mjs?v=2027';
 
 const $ = id => document.getElementById(id);
 const state = { data: null, kind: 'annual', selected: { annual: 'ann', months: '1', seasons: 'win', hex: 'win' }, windows: {}, modes: {}, request: 0 };
@@ -42,8 +42,8 @@ function renderTable(history) {
 }
 async function render() {
   if (!state.data) return;
-  const individual = state.kind !== 'annual' && state.modes[state.kind] === 'individual';
-  $('sunshine-view-controls').hidden = state.kind === 'annual';
+  const individual = state.modes[state.kind] === 'individual';
+  $('sunshine-view-controls').hidden = false;
   document.querySelectorAll('[data-sunshine-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.sunshineView === (individual ? 'individual' : 'historical'))));
   $('period-control').hidden = individual || state.kind === 'annual';
   $('sunshine-window-control').hidden = individual;
@@ -99,21 +99,23 @@ async function renderIndividual() {
   const available = [...new Set(data.records.map(row => Number(row.month.slice(0,4))))];
   const latest = data.records.at(-1).month;
   if (state.kind === 'seasons' && latest.endsWith('-12')) available.push(Number(latest.slice(0,4)) + 1);
+  if (!available.includes(2027)) available.push(2027);
   available.sort((a,b) => b-a);
-  const years = individualPicker.update(available, Number(latest.slice(0,4)));
-  const series = years.map(year => ({year, colour: individualPicker.colour(year), rows: sunshineBreakdown(data, state.kind, year)}));
+  const years = individualPicker.update(available, new Date().getUTCFullYear() === 2027 ? 2027 : Number(latest.slice(0,4)));
+  const series = years.map(year => ({year, colour: individualPicker.colour(year), rows: year === 2027 ? sunshineOutlook2027(data, state.kind) : sunshineBreakdown(data, state.kind, year)}));
   const rows = series.flatMap(series => series.rows);
   const style = getComputedStyle(document.documentElement), color = name => style.getPropertyValue(name).trim();
   const average = individualPicker.averageEnabled() ? window.IndividualComparison.averageSeries(year => sunshineBreakdown(data, state.kind, year), color('--text-body')) : null;
   const labels = series[0].rows.map(row => state.kind === 'months' ? row.label.slice(0,3) : row.label.split(' (')[0]);
-  const kindLabel = { months: 'Monthly', seasons: 'Seasonal', hex: 'Hex-season' }[state.kind];
+  const kindLabel = { annual: 'Annual', months: 'Monthly', seasons: 'Seasonal', hex: 'Hex-season' }[state.kind];
   $('comparison-window').textContent = `${data.label} · ${kindLabel} totals. ${series.map(({year,rows}) => `${year}: ${rows.filter(row => row.complete).length}/${rows.length} periods complete`).join(' · ')}.${state.kind === 'seasons' ? ' Winter includes the preceding December.' : ''}${rows.some(row => row.count && !row.complete) ? ' Hatched bars show incomplete totals.' : ''}${rows.some(row => !row.count) ? ' Periods without observations are left blank.' : ''}`;
+  if (rows.some(row => row.projected)) $('comparison-window').textContent += ' 2027 includes projected sunshine from this region’s 2017–2026 monthly averages.';
   if (average) { series.push(average); $('comparison-window').textContent += ` ${window.IndividualComparison.averageNote(average)}`; }
   $('sunshine-individual-caption').textContent = `${data.label} · ${series.map(series => series.year).join(', ')} · ${kindLabel} sunshine totals`;
   const tableRows = labels.flatMap((_,i) => series.map(({rows}) => rows[i]));
   $('sunshine-individual-rows').replaceChildren(...tableRows.map(row => {
     const tr = document.createElement('tr');
-    for (const text of [row.label, row.year, row.value === null ? '—' : row.value.toFixed(1), row.average ? `${row.years}/30 complete years` : `${row.count}/${row.expected} months${row.complete ? '' : row.count ? ' · incomplete' : ' · no observations'}`]) {
+    for (const text of [row.label, row.year, row.value === null ? '—' : row.value.toFixed(1), row.average ? `${row.years}/30 complete years` : row.coverage || `${row.count}/${row.expected} months${row.complete ? '' : row.count ? ' · incomplete' : ' · no observations'}`]) {
       const td = document.createElement('td'); td.textContent = text; tr.append(td);
     }
     return tr;
