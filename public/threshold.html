@@ -261,6 +261,7 @@ body {
 </style>
     <link rel="stylesheet" href="site.css?v=overview-1">
     <link rel="stylesheet" href="theme.css?v=design-1">
+    <script src="cet-outlook.js?v=outlook-3"></script>
     <script src="appearance.js?v=design-1"></script>
     <link rel="icon" href="logo.svg" type="image/svg+xml">
 </head>
@@ -404,7 +405,7 @@ body {
         </aside>
     </div>
     <p class="caption">
-        Data: <code>MeanTempCET.csv</code> (daily means). Days with mean ≥ threshold are counted inclusively, matching <code>temperature_analysis.py</code>. Dotted lines count days from the CET forecast feed.
+        Data: <code>MeanTempCET.csv</code> (daily means). Days with mean ≥ threshold are counted inclusively, matching <code>temperature_analysis.py</code>. Dotted lines include CET forecasts and projections. Projected days use the 2017–2026 mean for that calendar day.
     </p>
 
     <script>
@@ -466,6 +467,7 @@ body {
                     value,
                     year: date.getUTCFullYear(),
                     month: date.getUTCMonth() + 1,
+                    day: date.getUTCDate(),
                     doy: dayOfYear(date)
                 };
             }).filter(Boolean);
@@ -578,8 +580,8 @@ body {
             loadCsvRows(FORECAST_2026_PATH).catch(() => [])
         ]).then(([observations, forecasts]) => {
             TARGET_DATE = new Date(observations.reduce((latest, row) => Math.max(latest, +row.date), 0));
-            const future = new Map(forecasts.filter(row => row.date > TARGET_DATE).map(row => [+row.date, row]));
-            const rows = observations.concat([...future.values()]).sort((a,b) => a.date - b.date);
+            const future = CETOutlook.outlook(observations, forecasts);
+            const rows = observations.concat(future).sort((a,b) => a.date - b.date);
             const byYear = new Map();
             for (const row of rows) {
                 if (!byYear.has(row.year)) byYear.set(row.year, []);
@@ -806,7 +808,7 @@ body {
                     `<br><small>Green vertical line: ${td} ${tm} (day of year ${targetDoy}).</small>`;
 
                 forecastSummaryEl.textContent = traces.some(trace => trace.line.dash === "dot")
-                    ? "Dotted lines include forecast days." : "";
+                    ? "Dotted lines include forecast and projected days." : "";
 
                 const monthStarts = Array.from({ length: 12 }, (_, i) =>
                     dayOfYear(new Date(Date.UTC(2025, i, 1)))
