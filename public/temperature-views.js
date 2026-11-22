@@ -99,14 +99,24 @@
                         text: series.observed.map(row => row ? dateLabel(row.iso) : ''),
                         hovertemplate: `%{text}<br>${dailyLabel}: %{y:.${precision}f}${unit}<extra>%{fullData.name}</extra>`
                     });
-                    if (series.forecast.some(Boolean)) {
-                        const forecast = series.forecast.slice();
-                        const first = forecast.findIndex(Boolean);
-                        if (first > 0 && series.observed[first - 1]) forecast[first - 1] = series.observed[first - 1];
-                        traces.push({ x, y: forecast.map(row => row?.value ?? null), type: 'scatter', mode: 'lines+markers',
-                            name: `${series.year} forecast`, line: { color: colour, width: 2, dash: 'dot' },
+                    // Keep winter's December and January forecasts in separate calendar-year traces.
+                    const groups = new Map();
+                    series.forecast.forEach((row, i) => {
+                        if (!row) return;
+                        const name = row.year + ' ' + row.source;
+                        if (!groups.has(name)) groups.set(name, Array(x.length).fill(null));
+                        groups.get(name)[i] = row;
+                    });
+                    for (const [name, points] of groups) {
+                        const first = points.findIndex(Boolean);
+                        const projected = points[first].source === 'projection';
+                        const previous = series.observed[first - 1] || series.forecast[first - 1];
+                        if (previous?.year === points[first].year) points[first - 1] = previous;
+                        traces.push({ x, y: points.map(row => row?.value ?? null), type: 'scatter', mode: 'lines+markers',
+                            name: name + (projected ? ' · 1991–2020 daily mean' : ''),
+                            line: { color: colour, width: 2, dash: projected ? 'dash' : 'dot' },
                             marker: { size: 3 }, connectgaps: false,
-                            text: forecast.map(row => row ? `${dateLabel(row.iso)}${row === series.observed[first - 1] ? ' · observed' : ' · forecast'}` : ''),
+                            text: points.map(row => row ? dateLabel(row.iso) + ' · ' + (row.source || 'observed') : ''),
                             hovertemplate: `%{text}<br>${dailyLabel}: %{y:.${precision}f}${unit}<extra></extra>` });
                     }
                 }

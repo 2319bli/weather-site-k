@@ -119,7 +119,7 @@
 
     function daily(archive, period, selectedYears, forecastRows = []) {
         const calendar = slots(period);
-        const forecast = forecastRows.map(normalize).filter(row => row.iso > archive.latest);
+        const forecast = forecastRows.map(row => ({ ...normalize(row), source: row.source || 'forecast' })).filter(row => row.iso > archive.latest);
         const series = selectedYears.map(year => {
             const observed = new Map(entries(archive, period, year).map(row => [row.key, row]));
             const predicted = new Map(forecast.filter(row => period.months.includes(row.month) && periodYear(row, period) === year)

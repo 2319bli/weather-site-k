@@ -253,9 +253,10 @@ body {
     <link rel="icon" href="logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="temperature.css?v=views-6">
     <script src="data/cet-early.js"></script>
-    <script src="temperature-data.js?v=monthly-2"></script>
+    <script src="cet-outlook.js"></script>
+    <script src="temperature-data.js?v=outlook-1"></script>
     <script src="individual-comparison.js?v=monthly-1"></script>
-    <script src="temperature-views.js?v=monthly-2"></script>
+    <script src="temperature-views.js?v=outlook-1"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -348,7 +349,7 @@ body {
                     <button type="button" class="mode-button-annual" data-mode="warmestUpTo" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Warmest 9 up to date
                     </button>
-                    <button type="button" class="mode-button-annual" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
+                    <button type="button" class="mode-button-annual" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Current calendar year and the previous nine years">
                         Last 9 years
                     </button>
                 </div>
@@ -359,6 +360,7 @@ body {
                         <input id="annual-up-to-date" type="date" style="flex: 1 1 auto; padding: 6px 8px; font-size: 1rem; border: 1px solid #dcdcdc; border-radius: 4px;" />
                     </div>
                 </div>
+                <div id="forecast-year-options"></div>
                 <form id="year-form">
                     <input
                         id="year-input"
@@ -405,7 +407,7 @@ body {
                     <button type="button" class="mode-button" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Mixed (5 mildest + 4 coldest)
                     </button>
-                    <button type="button" class="mode-button" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
+                    <button type="button" class="mode-button" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Current calendar year and the previous nine years">
                         Last 9 years
                     </button>
                 </div>
@@ -449,7 +451,7 @@ body {
                     <button type="button" class="mode-button-season" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Mixed (5 mildest + 4 coldest)
                     </button>
-                    <button type="button" class="mode-button-season" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
+                    <button type="button" class="mode-button-season" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Current calendar year and the previous nine years">
                         Last 9 years
                     </button>
                 </div>
@@ -495,7 +497,7 @@ body {
                     <button type="button" class="mode-button-hex-season" data-mode="mixed" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;">
                         Mixed (5 mildest + 4 coldest)
                     </button>
-                    <button type="button" class="mode-button-hex-season" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Latest dataset year and the previous nine years">
+                    <button type="button" class="mode-button-hex-season" data-mode="last9" style="padding: 8px 12px; text-align: left; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 4px;" title="Current calendar year and the previous nine years">
                         Last 9 years
                     </button>
                 </div>
@@ -521,13 +523,13 @@ body {
     </div>
     <p class="caption">
         Monthly archive (1659–1771): <a href="https://www.metoffice.gov.uk/hadobs/hadcet/data/meantemp_monthly_totals.txt">Met Office HadCET</a> (© Crown copyright).
-        Daily data source: <code>MeanTempCET.csv</code> (daily mean CET), loaded from the server. Forecast extensions are dotted.
+        Daily data source: <code>MeanTempCET.csv</code> (daily mean CET), loaded from the server. Forecasts are dotted. Dashed projections use the 1991–2020 average for each calendar day.
     </p>
 
     <script>
     (function () {
         const CSV_PATH = "https://weather-site-k-admin.2319bli.workers.dev/data/MeanTempCET.csv";
-        const FORECAST_2026_PATH = "https://weather-site-k-admin.2319bli.workers.dev/data/forecast_2026.csv";
+        const FORECAST_PATH = "https://weather-site-k-admin.2319bli.workers.dev/data/forecast_2026.csv";
         const DEFAULT_YEARS = [
             2025, 2024, 2023, 2022, 2020,
             2018, 2026, 2014, 2011, 2006
@@ -563,7 +565,6 @@ body {
             12: [2015, 1934, 1974, 1852, 2025, 1828, 1843, 1988, 1857]  // December
         };
         
-        const FORECAST_TEXT = ``.trim();
         let TARGET_DATE = null;
 
         function dayOfYear(date) {
@@ -571,30 +572,7 @@ body {
             return Math.floor((date - start) / 86400000);
         }
 
-        function parseForecast() {
-            if (!FORECAST_TEXT) return [];
-            return FORECAST_TEXT.split(/\s*\n+\s*/).map((line) => {
-                const [dateStr, valueStr] = line.split(/[,\t]/).map((part) => part.trim());
-                const date = new Date(dateStr + "T00:00:00Z");
-                const value = parseFloat(valueStr);
-                if (Number.isNaN(value) || Number.isNaN(date.getTime())) {
-                    return null;
-                }
-                return {
-                    date,
-                    value,
-                    doy: dayOfYear(date)
-                };
-            }).filter(Boolean);
-        }
-
-
-        function extractNov13Value(points, targetDoy) {
-            const match = points.find((point) => point.doy === targetDoy);
-            return match ? match.ytd : null;
-        }
-
-        function buildMonthShapes(monthStarts, targetDoy, targetY) {
+        function buildMonthShapes(monthStarts, targetDoy) {
             const shapes = monthStarts.map((doy) => ({
                 type: "line",
                 x0: doy,
@@ -691,32 +669,25 @@ body {
 
         Promise.all([
             loadCsvRows(CSV_PATH),
-            loadCsvRows(FORECAST_2026_PATH).catch(() => [])
-        ]).then(([rows, forecast2026Rows]) => {
-            console.log("Data loaded, rows:", rows.length, "forecast2026:", forecast2026Rows.length);
-            const observedRows = rows.slice();
-            const currentYear = new Date().getUTCFullYear();
-            TARGET_DATE = latestDateForYear(observedRows, 2026) ||
-                latestDateForYear(observedRows, currentYear) ||
-                (observedRows.length ? new Date(observedRows[observedRows.length - 1].date) : new Date());
-            const availableYears = new Set(rows.map((row) => row.year));
-            // Add 2026 if forecast data exists
-            if (forecast2026Rows.length > 0) {
-                availableYears.add(2026);
-                // Add 2026 forecast rows to the main rows array
-                rows = rows.concat(forecast2026Rows);
-            }
-            const latestComparisonYear = Math.max(...availableYears);
+            loadCsvRows(FORECAST_PATH).catch(() => [])
+        ]).then(([observedRows, forecasts]) => {
+            const future = CETOutlook.outlook(observedRows, forecasts);
+            const rows = observedRows.concat(future);
+            const availableYears = new Set(rows.map(row => row.year));
+            const latestComparisonYear = CETOutlook.defaultYear(availableYears);
+            const defaultYears = [...new Set([latestComparisonYear, ...DEFAULT_YEARS])]
+                .filter(year => availableYears.has(year) && year <= latestComparisonYear).slice(0, MAX_YEARS);
+            TARGET_DATE = latestDateForYear(observedRows, latestComparisonYear) ||
+                new Date(observedRows.reduce((latest, row) => Math.max(latest, +row.date), 0));
             // Build year index for O(1) lookup instead of O(n) filter on every render
             const rowsByYear = new Map();
             rows.forEach((row) => {
                 if (!rowsByYear.has(row.year)) rowsByYear.set(row.year, []);
                 rowsByYear.get(row.year).push(row);
             });
+            for (const entries of rowsByYear.values()) entries.sort((a, b) => a.date - b.date);
             const state = {
-                rows,
-                forecast2026: forecast2026Rows,
-                years: DEFAULT_YEARS.slice(0, MAX_YEARS).filter((year) => availableYears.has(year)),
+                years: defaultYears.slice(),
                 monthlyYears: null, // Will be set when rendering monthly chart (null = use default top 9 + current)
                 seasonYears: null,
                 hexSeasonYears: null,
@@ -756,7 +727,7 @@ body {
             const errorElHexSeason = document.getElementById("year-error-hex-season");
             const annualWarmestUpToControlsEl = document.getElementById("annual-warmest-up-to-controls");
             const annualUpToDateInputEl = document.getElementById("annual-up-to-date");
-            const alternateViews = CETViews.create(observedRows, forecast2026Rows, chartEl, summaryEl, COLOR_PALETTE, () => {
+            const alternateViews = CETViews.create(observedRows, future, chartEl, summaryEl, COLOR_PALETTE, () => {
                 if (state.currentView === "annual") renderChart();
                 else if (state.currentView === "months") renderMonthlyChart();
                 else if (state.currentView === "seasons") renderSeasonChart();
@@ -958,57 +929,28 @@ body {
             function getYearsForAnnualMode(mode) {
                 if (mode === "last9") return getRecentComparisonYears();
 
-                const currentYear = new Date().getUTCFullYear();
+                const currentYear = latestComparisonYear;
                 const upToDate = state.annualWarmestUpToDate || TARGET_DATE;
-
-                function entriesForYearFull2026(year) {
-                    if (year === 2026) {
-                        const forecastDates = new Set((state.forecast2026 || []).map(e => e.date.getTime()));
-                        const actual2026Entries = (rowsByYear.get(2026) || [])
-                            .filter((row) => !forecastDates.has(row.date.getTime()))
-                            .sort((a, b) => a.date - b.date);
-                        const dataMap = new Map();
-                        actual2026Entries.forEach(entry => dataMap.set(entry.date.getTime(), entry));
-                        if (state.forecast2026 && state.forecast2026.length > 0) {
-                            state.forecast2026.forEach(entry => {
-                                const dateKey = entry.date.getTime();
-                                if (!dataMap.has(dateKey)) dataMap.set(dateKey, entry);
-                            });
-                        }
-                        return Array.from(dataMap.values()).sort((a, b) => a.date - b.date);
-                    }
-                    return (rowsByYear.get(year) || []).slice().sort((a, b) => a.date - b.date);
-                }
-
-                function entriesForYearActual2026Only(year) {
-                    if (year === 2026) {
-                        const forecastDates = new Set((state.forecast2026 || []).map(e => e.date.getTime()));
-                        return (rowsByYear.get(2026) || [])
-                            .filter((row) => !forecastDates.has(row.date.getTime()))
-                            .slice()
-                            .sort((a, b) => a.date - b.date);
-                    }
-                    return (rowsByYear.get(year) || []).slice().sort((a, b) => a.date - b.date);
-                }
 
                 const yearStats = [];
 
-                // Mildest / coldest / mixed: rank by full-calendar-year mean (2026 uses actual+forecast merge).
+                // Mildest / coldest / mixed: rank by full-calendar-year mean (current year includes its outlook).
                 if (mode === "mildest" || mode === "coldest" || mode === "mixed") {
                     availableYears.forEach((year) => {
-                        const entries = entriesForYearFull2026(year);
+                        if (year > latestComparisonYear) return;
+                        const entries = rowsByYear.get(year) || [];
                         if (!entries.length) return;
                         const sum = entries.reduce((s, e) => s + e.value, 0);
                         yearStats.push({ year, mean: sum / entries.length });
                     });
                 } else if (mode === "warmestUpTo") {
-                    // Warmest up to date: YTD mean through chosen month/day, confirmed data only; 2026 capped at TARGET_DATE.
+                    // Warmest up to date: YTD mean through chosen month/day, confirmed data only; latest observations capped at TARGET_DATE.
                     availableYears.forEach((year) => {
                         let cutoffDate = new Date(Date.UTC(year, upToDate.getUTCMonth(), upToDate.getUTCDate()));
-                        if (year === 2026 && cutoffDate > TARGET_DATE) {
+                        if (year === TARGET_DATE.getUTCFullYear() && cutoffDate > TARGET_DATE) {
                             cutoffDate = TARGET_DATE;
                         }
-                        const entries = entriesForYearActual2026Only(year);
+                        const entries = (rowsByYear.get(year) || []).filter(row => !row.source);
                         const targetDoyForYear = dayOfYear(cutoffDate);
                         let cumulative = 0;
                         let count = 0;
@@ -1060,268 +1002,76 @@ body {
             function renderChart() {
                 let YEARS = state.years;
                 if (!YEARS.length) {
-                    YEARS = DEFAULT_YEARS.slice(0, MAX_YEARS).filter((year) => availableYears.has(year));
+                    YEARS = defaultYears;
                 }
                 if (alternateViews.render("annual", null, YEARS)) return;
-                // Filter out 2026 from normal processing since it's forecast-only
-                const actualDataRows = state.rows.filter((row) => row.year !== 2026);
-                const parsed = actualDataRows.filter((row) => YEARS.includes(row.year));
-            const byYear = new Map();
-            YEARS.forEach((year) => byYear.set(year, []));
-            parsed.forEach((entry) => {
-                byYear.get(entry.year).push(entry);
-            });
+                const traces = [], annotations = [], nov13Values = [], finishes = [];
+                const targetDoy = dayOfYear(TARGET_DATE);
+                YEARS.forEach((year, index) => {
+                    const entries = rowsByYear.get(year) || [];
+                    const series = CETOutlook.cumulative(entries, year, COLOR_PALETTE[index], row => row.doy, "YTD mean");
+                    traces.push(...series.traces);
+                    const actual = series.traces.find(trace => trace.name === year + " (YTD mean)");
+                    const i = actual?.x.indexOf(targetDoy) ?? -1;
+                    nov13Values.push({ year, value: i >= 0 ? actual.y[i] : null });
+                    const last = series.last;
+                    if (last?.source) finishes.push(year + " " + last.source + " through " + last.label + ": " + last.y.toFixed(5) + "°C");
+                    if (year === latestComparisonYear && series.latestObserved) {
+                        const point = series.latestObserved;
+                        annotations.push({ x: point.x, y: point.y, text: year + ": " + point.y.toFixed(2) + "°C",
+                            showarrow: true, arrowhead: 4, ax: 30, ay: -20, bgcolor: "rgba(255,255,255,0.85)" });
+                    }
+                });
+                const forecastSummary = finishes.join("<br>");
 
-            const traces = [];
-            const annotations = [];
-            const nov13Values = [];
-            const targetDoy = dayOfYear(TARGET_DATE);
-            const forecastRows = parseForecast();
-            let forecastSeries = [];
-            let latest2026Point = null;
-            let forecastSummary = "";
-            let targetY2026 = null;
-
-            YEARS.forEach((year, idx) => {
-                const color = COLOR_PALETTE[idx] || "#999999";
-                
-                // Handle 2026 as a full forecast year (before checking for empty entries)
-                if (year === 2026) {
-                    // Get actual 2026 data from MeanTempCET.csv (before forecast was concatenated)
-                    // We need to filter out forecast data that was concatenated into rows
-                    const forecastDates = new Set((state.forecast2026 || []).map(e => e.date.getTime()));
-                    const actual2026Entries = state.rows
-                        .filter((row) => row.year === 2026 && !forecastDates.has(row.date.getTime()))
-                        .sort((a, b) => a.date - b.date);
-                    // Combine actual data with forecast data, using a Map to deduplicate by date
-                    // Actual data takes precedence over forecast when dates match
-                    const dataMap = new Map();
-                    // First, add all actual entries
-                    actual2026Entries.forEach(entry => {
-                        const dateKey = entry.date.getTime();
-                        dataMap.set(dateKey, entry);
-                    });
-                    // Then, add forecast entries only if date doesn't exist (actual takes precedence)
-                    if (state.forecast2026 && state.forecast2026.length > 0) {
-                        state.forecast2026.forEach(entry => {
-                            const dateKey = entry.date.getTime();
-                            if (!dataMap.has(dateKey)) {
-                                dataMap.set(dateKey, entry);
-                            }
-                        });
-                    }
-                    // Convert map to array and sort by date
-                    const all2026Data = Array.from(dataMap.values()).sort((a, b) => a.date - b.date);
-                    
-                    if (all2026Data.length === 0) {
-                        nov13Values.push({ year: 2026, value: null });
-                        return;
-                    }
-                    
-                    // Split into confirmed (up to and including TARGET_DATE) and forecast (after TARGET_DATE)
-                    const lastConfirmedDate = TARGET_DATE;
-                    const confirmed2026Entries = all2026Data.filter(entry => {
-                        const entryDate = new Date(entry.date);
-                        return entryDate <= lastConfirmedDate;
-                    });
-                    const forecast2026Entries = all2026Data.filter(entry => {
-                        const entryDate = new Date(entry.date);
-                        return entryDate > lastConfirmedDate;
-                    });
-                    
-                    // Process confirmed entries (solid line)
-                    let cumulative = 0;
-                    const confirmedPoints2026 = confirmed2026Entries.map((entry, idx) => {
-                        cumulative += entry.value;
-                        const ytd = cumulative / (idx + 1);
-                        return { ...entry, ytd };
-                    });
-                    
-                    // Process forecast entries (dotted line), continuing from confirmed cumulative
-                    let forecastCumulative = cumulative;
-                    const forecastPoints2026 = forecast2026Entries.map((entry, idx) => {
-                        forecastCumulative += entry.value;
-                        const totalDays = confirmed2026Entries.length + idx + 1;
-                        const ytd = forecastCumulative / totalDays;
-                        return { ...entry, ytd };
-                    });
-                    
-                    // Add confirmed trace (solid line)
-                    if (confirmedPoints2026.length > 0) {
-                        traces.push({
-                            x: confirmedPoints2026.map((point) => point.doy),
-                            y: confirmedPoints2026.map((point) => point.ytd),
-                            mode: "lines",
-                            name: "2026 (YTD mean)",
-                            line: {
-                                color,
-                                dash: "solid",
-                                width: 2
-                            },
-                            customdata: confirmedPoints2026.map((point) => {
-                                const date = new Date(point.date);
-                                const isDec31 = date.getUTCMonth() === 11 && date.getUTCDate() === 31;
-                                return {
-                                    date,
-                                    label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                    formatted: isDec31 ? point.ytd.toFixed(5) : point.ytd.toFixed(2)
-                                };
-                            }),
-                            hovertemplate: "%{customdata.label}<br>YTD mean: %{customdata.formatted}°C<extra></extra>"
-                        });
-                    }
-                    
-                    // Add forecast trace (dotted line)
-                    if (forecastPoints2026.length > 0) {
-                        traces.push({
-                            x: forecastPoints2026.map((point) => point.doy),
-                            y: forecastPoints2026.map((point) => point.ytd),
-                            mode: "lines",
-                            name: "2026 forecast (YTD mean)",
-                            line: {
-                                color,
-                                dash: "dot",
-                                width: 2
-                            },
-                            customdata: forecastPoints2026.map((point) => {
-                                const date = new Date(point.date);
-                                const isDec31 = date.getUTCMonth() === 11 && date.getUTCDate() === 31;
-                                return {
-                                    date,
-                                    label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                    formatted: isDec31 ? point.ytd.toFixed(5) : point.ytd.toFixed(2)
-                                };
-                            }),
-                            hovertemplate: "%{customdata.label}<br>YTD mean: %{customdata.formatted}°C<extra></extra>"
-                        });
-                    }
-                    
-                    // Use the last point (either confirmed or forecast) for summary
-                    const allPoints2026 = [...confirmedPoints2026, ...forecastPoints2026];
-                    const final2026Point = allPoints2026[allPoints2026.length - 1];
-                    if (forecastSummary) {
-                        forecastSummary += `<br>2026 forecast finish: ${final2026Point.ytd.toFixed(5)}°C`;
-                    } else {
-                        forecastSummary = `2026 forecast finish: ${final2026Point.ytd.toFixed(5)}°C`;
-                    }
-
-                    const targetPoint2026 = allPoints2026.find((p) => p.doy === targetDoy);
-                    if (targetPoint2026) {
-                        const nov13Value = targetPoint2026.ytd;
-                        nov13Values.push({ year: 2026, value: nov13Value });
-                        targetY2026 = targetPoint2026.ytd;
-                    } else {
-                        nov13Values.push({ year: 2026, value: null });
-                    }
-                    
-                    // Add annotation pointing to 2026 data (last confirmed point, which is TARGET_DATE)
-                    if (confirmedPoints2026.length > 0) {
-                        latest2026Point = confirmedPoints2026[confirmedPoints2026.length - 1]; // Point to last confirmed data point (2026-01-09)
-                    } else if (allPoints2026.length > 0) {
-                        latest2026Point = allPoints2026[0];
-                    }
-                    if (latest2026Point) {
-                        annotations.push({
-                            x: latest2026Point.doy,
-                            y: latest2026Point.ytd,
-                            text: `2026: ${latest2026Point.ytd.toFixed(2)}°C`,
-                            showarrow: true,
-                            arrowhead: 4,
-                            ax: 30,
-                            ay: -20,
-                            bgcolor: "rgba(255,255,255,0.85)"
-                        });
-                    }
-                    
-                    return; // Skip the normal processing for 2026
-                }
-                
-                const entries = (byYear.get(year) || []).slice().sort((a, b) => a.date - b.date);
-                if (!entries.length) {
-                    nov13Values.push({ year, value: null });
-                    return;
-                }
-                let cumulative = 0;
-                const ytdPoints = entries.map((entry, idx) => {
-                    cumulative += entry.value;
-                    const ytd = cumulative / (idx + 1);
-                    return { ...entry, ytd };
+                nov13Values.sort((a, b) => {
+                    if (a.value === null && b.value === null) return 0;
+                    if (a.value === null) return 1;
+                    if (b.value === null) return -1;
+                    return b.value - a.value;
                 });
 
-                traces.push({
-                    x: ytdPoints.map((point) => point.doy),
-                    y: ytdPoints.map((point) => point.ytd),
-                    mode: "lines",
-                    name: `${year} (YTD mean)`,
-                    line: {
-                        color,
-                        width: 2
+                const nov13Text = nov13Values.map((item) => (
+                    item.value === null
+                        ? `${item.year}: n/a`
+                        : `${item.year}: ${item.value.toFixed(2)}°C`
+                )).join("<br>");
+
+                const targetDay = TARGET_DATE.getUTCDate();
+                const targetMonth = TARGET_DATE.toLocaleString('en-GB', { month: 'short' });
+                summaryEl.innerHTML = `<strong>${targetDay} ${targetMonth} values (high → low)</strong><br>${nov13Text}`;
+                document.getElementById("forecast-summary").innerHTML = forecastSummary
+                    ? `<strong>${forecastSummary}</strong>`
+                    : "";
+
+                const monthStarts = Array.from({ length: 12 }, (_, idx) =>
+                    dayOfYear(new Date(Date.UTC(latestComparisonYear, idx, 1)))
+                );
+
+                const layout = {
+                    title: "Year-to-Date Mean (CET)",
+                    xaxis: {
+                        title: "Day of Year",
+                        tickmode: "array",
+                        tickvals: monthStarts,
+                        ticktext: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                        range: [1, 366]
                     },
-                    customdata: ytdPoints.map((point) => {
-                        const date = new Date(point.date);
-                        const isDec31 = date.getUTCMonth() === 11 && date.getUTCDate() === 31;
-                        return {
-                            date,
-                            label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                            formatted: isDec31 ? point.ytd.toFixed(5) : point.ytd.toFixed(2)
-                        };
-                    }),
-                    hovertemplate: "%{customdata.label}<br>YTD mean: %{customdata.formatted}°C<extra></extra>"
-                });
+                    yaxis: {
+                        title: "Daily Mean Temperature (°C)"
+                    },
+                    margin: { l: 60, r: 20, t: 70, b: 60 },
+                    legend: {
+                        orientation: "h",
+                        x: 0,
+                        y: -0.2
+                    },
+                    shapes: buildMonthShapes(monthStarts, targetDoy),
+                    annotations
+                };
 
-
-                const nov13Value = extractNov13Value(ytdPoints, targetDoy);
-                nov13Values.push({ year, value: nov13Value });
-            });
-
-            nov13Values.sort((a, b) => {
-                if (a.value === null && b.value === null) return 0;
-                if (a.value === null) return 1;
-                if (b.value === null) return -1;
-                return b.value - a.value;
-            });
-
-            const nov13Text = nov13Values.map((item) => (
-                item.value === null
-                    ? `${item.year}: n/a`
-                    : `${item.year}: ${item.value.toFixed(2)}°C`
-            )).join("<br>");
-
-            const targetDay = TARGET_DATE.getUTCDate();
-            const targetMonth = TARGET_DATE.toLocaleString('en-GB', { month: 'short' });
-            summaryEl.innerHTML = `<strong>${targetDay} ${targetMonth} values (high → low)</strong><br>${nov13Text}`;
-            document.getElementById("forecast-summary").innerHTML = forecastSummary
-                ? `<strong>${forecastSummary}</strong>`
-                : "";
-
-            const monthStarts = Array.from({ length: 12 }, (_, idx) =>
-                dayOfYear(new Date(Date.UTC(2025, idx, 1)))
-            );
-
-            const layout = {
-                title: "Year-to-Date Mean (CET)",
-                xaxis: {
-                    title: "Day of Year",
-                    tickmode: "array",
-                    tickvals: monthStarts,
-                    ticktext: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                    range: [1, 366]
-                },
-                yaxis: {
-                    title: "Daily Mean Temperature (°C)"
-                },
-                margin: { l: 60, r: 20, t: 70, b: 60 },
-                legend: {
-                    orientation: "h",
-                    x: 0,
-                    y: -0.2
-                },
-                shapes: buildMonthShapes(monthStarts, targetDoy, targetY2026),
-                annotations
-            };
-
-            chartEl.textContent = "";
-            return Plotly.newPlot(chartEl, traces, layout, { responsive: true });
+                chartEl.textContent = "";
+                return Plotly.newPlot(chartEl, traces, layout, { responsive: true });
             }
             
             function getYearsForMonth(month, mode) {
@@ -1329,7 +1079,7 @@ body {
                 // Group by year using pre-computed month field (no new Date() calls)
                 const yearData = new Map();
                 rows.forEach(row => {
-                    if (row.month !== month) return;
+                    if (row.year > latestComparisonYear || row.month !== month) return;
                     if (!yearData.has(row.year)) yearData.set(row.year, []);
                     yearData.get(row.year).push(row);
                 });
@@ -1346,8 +1096,7 @@ body {
                     yearMeans.push({ year, mean, rows });
                 });
                 
-                const now = new Date();
-                const currentYear = now.getUTCFullYear();
+                const currentYear = latestComparisonYear;
                 
                 if (mode === "mixed") {
                     // Sort by mean temperature (highest first to get mildest)
@@ -1459,13 +1208,14 @@ body {
                 if (mode === "last9") return getRecentComparisonYears();
                 const yearMeans = [];
                 availableYears.forEach((year) => {
+                    if (year > latestComparisonYear) return;
                     const entries = entriesForSeason(year, season);
                     if (!entries.length) return;
                     const sum = entries.reduce((total, entry) => total + entry.value, 0);
                     yearMeans.push({ year, mean: sum / entries.length });
                 });
 
-                const currentYear = new Date().getUTCFullYear();
+                const currentYear = latestComparisonYear;
                 if (mode === "mixed") {
                     yearMeans.sort((a, b) => b.mean - a.mean);
                     const filtered = yearMeans.filter((y) => y.year !== currentYear);
@@ -1526,13 +1276,14 @@ body {
                 if (mode === "last9") return getRecentComparisonYears();
                 const yearMeans = [];
                 availableYears.forEach((year) => {
+                    if (year > latestComparisonYear) return;
                     const entries = entriesForHexSeason(year, season);
                     if (!entries.length) return;
                     const sum = entries.reduce((total, entry) => total + entry.value, 0);
                     yearMeans.push({ year, mean: sum / entries.length });
                 });
 
-                const currentYear = new Date().getUTCFullYear();
+                const currentYear = latestComparisonYear;
                 if (mode === "mixed") {
                     yearMeans.sort((a, b) => b.mean - a.mean);
                     const filtered = yearMeans.filter((y) => y.year !== currentYear);
@@ -1548,8 +1299,7 @@ body {
             
             function renderMonthlyChart() {
                 const month = state.selectedMonth;
-                const now = new Date();
-                const currentYear = now.getUTCFullYear();
+                const currentYear = latestComparisonYear;
                 
                 // Get years based on selected mode
                 let defaultYears;
@@ -1575,356 +1325,13 @@ body {
                 renderMonthlyYearList();
                 if (alternateViews.render("months", month, yearsToShow)) return;
 
-                // Filter rows for the selected month
-                const monthRows = state.rows.filter(row => {
-                    const date = new Date(row.date);
-                    return date.getUTCMonth() + 1 === month && yearsToShow.includes(row.year);
-                });
-                
-                // Also include forecast data for current year if applicable
-                let forecastRowsCurrent = [];
-                const nowForForecast = new Date();
-                const currentYearForForecast = nowForForecast.getUTCFullYear();
-                
-                // Check if we have forecast data for the current year
-                if (currentYearForForecast === 2026 && state.forecast2026 && state.forecast2026.length > 0) {
-                    forecastRowsCurrent = state.forecast2026.filter(row => {
-                        const date = new Date(row.date);
-                        return date.getUTCMonth() + 1 === month;
-                    });
-                } else if (currentYearForForecast === 2025 && month === 12) {
-                    // Parse 2025 forecast for December
-                    const forecast2025 = parseForecast();
-                    forecastRowsCurrent = forecast2025.filter(row => {
-                        const date = new Date(row.date);
-                        return date.getUTCMonth() + 1 === 12;
-                    });
-                }
-                
-                const byYear = new Map();
-                yearsToShow.forEach(year => byYear.set(year, []));
-                monthRows.forEach(entry => {
-                    byYear.get(entry.year).push(entry);
-                });
-                
-                // Add forecast data for current year, with deduplication
-                if (forecastRowsCurrent.length > 0 && yearsToShow.includes(currentYear)) {
-                    // Get existing entries for current year
-                    const existingEntries = byYear.get(currentYear) || [];
-                    const existingDates = new Set(existingEntries.map(e => e.date.getTime()));
-                    
-                    // Only add forecast entries that don't already exist (actual data takes precedence)
-                    forecastRowsCurrent.forEach(entry => {
-                        const dateKey = entry.date.getTime();
-                        if (!existingDates.has(dateKey)) {
-                            byYear.get(currentYear).push(entry);
-                        }
-                    });
-                }
-                
                 const traces = [];
-                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                const monthName = monthNames[month - 1];
-                
-                // Determine if we should show green line (only for December of current year)
-                const currentYearForGreenLine = currentYear;
-                const showGreenLine = month === 12 && currentYearForGreenLine === 2025;
-                let targetDoy = null;
-                let targetY = null;
-                if (showGreenLine) {
-                    targetDoy = dayOfYear(TARGET_DATE);
-                }
-                
-                yearsToShow.forEach((year, idx) => {
-                    const color = COLOR_PALETTE[idx] || "#999999";
-                    let entries = (byYear.get(year) || []).slice().sort((a, b) => a.date - b.date);
-                    // For 2026, ensure we have entries even if initially empty (might need to add forecast)
-                    if (!entries.length && year === 2026 && currentYear === 2026) {
-                        // Try to get forecast entries for this month
-                        if (forecastRowsCurrent.length > 0) {
-                            entries = forecastRowsCurrent.slice().sort((a, b) => a.date - b.date);
-                        }
-                    }
-                    if (!entries.length) return;
-                    
-                    // For 2026, ensure we don't have duplicates (actual data takes precedence)
-                    if (year === 2026) {
-                        const seenDates = new Map();
-                        entries = entries.filter(entry => {
-                            const dateKey = entry.date.getTime();
-                            if (seenDates.has(dateKey)) {
-                                // Keep the first one (should be actual data since it was added first)
-                                return false;
-                            }
-                            seenDates.set(dateKey, true);
-                            return true;
-                        });
-                    }
-                    
-                    // Special handling for December of current year: split confirmed and forecast
-                    if (year === currentYear && month === 12) {
-                        const lastConfirmedDate = TARGET_DATE;
-                        const confirmedEntries = entries.filter(entry => {
-                            const entryDate = new Date(entry.date);
-                            return entryDate <= lastConfirmedDate;
-                        });
-                        const forecastEntries = entries.filter(entry => {
-                            const entryDate = new Date(entry.date);
-                            return entryDate > lastConfirmedDate;
-                        });
-                        
-                        // Confirmed data (solid line)
-                        if (confirmedEntries.length > 0) {
-                            let cumulative = 0;
-                            const confirmedPoints = confirmedEntries.map((entry, idx) => {
-                                cumulative += entry.value;
-                                const ytd = cumulative / (idx + 1);
-                                return { ...entry, ytd };
-                            });
-                            
-                            traces.push({
-                                x: confirmedPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    return date.getUTCDate();
-                                }),
-                                y: confirmedPoints.map(point => point.ytd),
-                                mode: "lines",
-                                name: `${year} (${monthName} mean)`,
-                                line: {
-                                    color,
-                                    width: 2,
-                                    dash: "solid"
-                                },
-                                customdata: confirmedPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    return {
-                                        date,
-                                        label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                        formatted: point.ytd.toFixed(2)
-                                    };
-                                }),
-                                hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                            });
-                            
-                            // Get target value for green line
-                            const targetDayOfMonth = lastConfirmedDate.getUTCDate();
-                            const targetPoint = confirmedPoints.find(p => {
-                                const date = new Date(p.date);
-                                return date.getUTCDate() === targetDayOfMonth;
-                            });
-                            if (targetPoint) {
-                                targetY = targetPoint.ytd;
-                            }
-                        }
-                        
-                        // Forecast data (dotted line)
-                        if (forecastEntries.length > 0 && confirmedEntries.length > 0) {
-                            // Calculate starting cumulative from confirmed data
-                            let cumulative = 0;
-                            confirmedEntries.forEach(entry => {
-                                cumulative += entry.value;
-                            });
-                            const confirmedCount = confirmedEntries.length;
-                            
-                            let forecastCumulative = cumulative;
-                            let forecastCount = confirmedCount;
-                            const forecastPoints = forecastEntries.map((entry, idx) => {
-                                forecastCount += 1;
-                                forecastCumulative += entry.value;
-                                const ytd = forecastCumulative / forecastCount;
-                                return { ...entry, ytd };
-                            });
-                            
-                            // Get last confirmed point for connection
-                            const lastConfirmed = confirmedEntries[confirmedEntries.length - 1];
-                            let lastConfirmedCumulative = 0;
-                            confirmedEntries.forEach(e => { lastConfirmedCumulative += e.value; });
-                            const lastConfirmedYtd = lastConfirmedCumulative / confirmedEntries.length;
-                            
-                            traces.push({
-                                x: [new Date(lastConfirmed.date).getUTCDate(), ...forecastPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    return date.getUTCDate();
-                                })],
-                                y: [lastConfirmedYtd, ...forecastPoints.map(point => point.ytd)],
-                                mode: "lines",
-                                name: `${year} forecast (${monthName} mean)`,
-                                line: {
-                                    color,
-                                    width: 2,
-                                    dash: "dot"
-                                },
-                                customdata: [{
-                                    date: new Date(lastConfirmed.date),
-                                    label: new Date(lastConfirmed.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                    formatted: lastConfirmedYtd.toFixed(2)
-                                }, ...forecastPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    const isLastDay = date.getUTCDate() === new Date(Date.UTC(year, month, 0)).getUTCDate();
-                                    return {
-                                        date,
-                                        label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                        formatted: isLastDay ? point.ytd.toFixed(5) : point.ytd.toFixed(2)
-                                    };
-                                })],
-                                hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                            });
-                        }
-                    } else {
-                        // Regular handling for other years/months
-                        // For 2026, we need to identify which entries are actual vs forecast based on TARGET_DATE
-                        let actualEntries = entries;
-                        let forecastEntries = [];
-                        
-                        if (year === currentYear && year === 2026) {
-                            // Split based on TARGET_DATE (confirmed up to and including TARGET_DATE, forecast after)
-                            const lastConfirmedDate = TARGET_DATE;
-                            actualEntries = entries.filter(e => {
-                                const entryDate = new Date(e.date);
-                                return entryDate <= lastConfirmedDate;
-                            });
-                            forecastEntries = entries.filter(e => {
-                                const entryDate = new Date(e.date);
-                                return entryDate > lastConfirmedDate;
-                            });
-                        }
-                        
-                        // Process actual entries
-                        let cumulative = 0;
-                        const actualPoints = actualEntries.map((entry, idx) => {
-                            cumulative += entry.value;
-                            const ytd = cumulative / (idx + 1);
-                            return { ...entry, ytd };
-                        });
-                        
-                        // Process forecast entries (if any)
-                        let forecastPoints = [];
-                        if (forecastEntries.length > 0) {
-                            let forecastCumulative = cumulative; // Continue from actual cumulative
-                            forecastPoints = forecastEntries.map((entry, idx) => {
-                                forecastCumulative += entry.value;
-                                const totalDays = actualEntries.length + idx + 1;
-                                const ytd = forecastCumulative / totalDays;
-                                return { ...entry, ytd };
-                            });
-                        }
-                        
-                        // For 2026, render confirmed and forecast as separate traces (like December)
-                        if (year === currentYear && year === 2026 && actualPoints.length > 0 && forecastPoints.length > 0) {
-                            // Confirmed trace (solid)
-                            traces.push({
-                                x: actualPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    return date.getUTCDate();
-                                }),
-                                y: actualPoints.map(point => point.ytd),
-                                mode: "lines",
-                                name: `${year} (${monthName} mean)`,
-                                line: {
-                                    color,
-                                    width: 2,
-                                    dash: "solid"
-                                },
-                                customdata: actualPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    const isLastDay = date.getUTCDate() === new Date(Date.UTC(year, month, 0)).getUTCDate();
-                                    return {
-                                        date,
-                                        label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                        formatted: isLastDay ? point.ytd.toFixed(5) : point.ytd.toFixed(2)
-                                    };
-                                }),
-                                hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                            });
-                            
-                            // Forecast trace (dotted) - connect to last confirmed point
-                            const lastConfirmed = actualPoints[actualPoints.length - 1];
-                            const lastConfirmedDay = new Date(lastConfirmed.date).getUTCDate();
-                            traces.push({
-                                x: [lastConfirmedDay, ...forecastPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    return date.getUTCDate();
-                                })],
-                                y: [lastConfirmed.ytd, ...forecastPoints.map(point => point.ytd)],
-                                mode: "lines",
-                                name: `${year} forecast (${monthName} mean)`,
-                                line: {
-                                    color,
-                                    width: 2,
-                                    dash: "dot"
-                                },
-                                customdata: [{
-                                    date: new Date(lastConfirmed.date),
-                                    label: new Date(lastConfirmed.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                    formatted: lastConfirmed.ytd.toFixed(2)
-                                }, ...forecastPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    const isLastDay = date.getUTCDate() === new Date(Date.UTC(year, month, 0)).getUTCDate();
-                                    return {
-                                        date,
-                                        label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                        formatted: isLastDay ? point.ytd.toFixed(5) : point.ytd.toFixed(2)
-                                    };
-                                })],
-                                hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                            });
-                        } else {
-                            // Regular handling for other cases
-                            const allPoints = [...actualPoints, ...forecastPoints];
-                            const hasForecast = forecastPoints.length > 0;
-                            const isForecast = year === currentYear && month !== 12 && hasForecast;
-                            
-                            traces.push({
-                                x: allPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    return date.getUTCDate(); // Day of month (1-31)
-                                }),
-                                y: allPoints.map(point => point.ytd),
-                                mode: "lines",
-                                name: year === currentYear && isForecast 
-                                    ? `${year} forecast (${monthName} mean)` 
-                                    : `${year} (${monthName} mean)`,
-                                line: {
-                                    color,
-                                    width: 2,
-                                    dash: isForecast ? "dot" : "solid"
-                                },
-                                customdata: allPoints.map(point => {
-                                    const date = new Date(point.date);
-                                    const isLastDay = date.getUTCDate() === new Date(Date.UTC(year, month, 0)).getUTCDate();
-                                    return {
-                                        date,
-                                        label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                        formatted: isLastDay ? point.ytd.toFixed(5) : point.ytd.toFixed(2)
-                                    };
-                                }),
-                                hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                            });
-                        }
-                    }
+                const monthName = monthSelect.options[monthSelect.selectedIndex].text.slice(0, 3);
+                yearsToShow.forEach((year, index) => {
+                    const entries = (rowsByYear.get(year) || []).filter(row => row.month === month);
+                    traces.push(...CETOutlook.cumulative(entries, year, COLOR_PALETTE[index], row => row.day, monthName + " mean").traces);
                 });
-                
-                // Build shapes (including green line for December only)
-                const shapes = [];
-                if (showGreenLine && targetDoy !== null) {
-                    const targetDate = TARGET_DATE;
-                    const targetDayOfMonth = targetDate.getUTCDate();
-                    shapes.push({
-                        type: "line",
-                        x0: targetDayOfMonth,
-                        x1: targetDayOfMonth,
-                        y0: 0,
-                        y1: 1,
-                        xref: "x",
-                        yref: "paper",
-                        line: {
-                            color: "green",
-                            width: 2
-                        }
-                    });
-                }
-                
-                const maxDays = new Date(Date.UTC(2025, month, 0)).getUTCDate();
+                const maxDays = Math.max(...yearsToShow.map(year => daysInUTCMonth(year, month)));
                 const layout = {
                     title: `${monthName} Cumulative Mean (CET)`,
                     xaxis: {
@@ -1940,7 +1347,6 @@ body {
                         x: 0,
                         y: -0.2
                     },
-                    shapes
                 };
                 
                 let modeText = "";
@@ -1966,7 +1372,7 @@ body {
             function renderSeasonChart() {
                 const season = state.selectedSeason;
                 const seasonInfo = SEASONS[season];
-                const currentYear = new Date().getUTCFullYear();
+                const currentYear = latestComparisonYear;
 
                 if (state.seasonYears === null) {
                     state.seasonYears = getYearsForSeason(season, state.seasonMode);
@@ -1978,63 +1384,10 @@ body {
                 if (alternateViews.render("seasons", season, yearsToShow)) return;
                 const traces = [];
 
-                yearsToShow.forEach((year, idx) => {
-                    const color = COLOR_PALETTE[idx] || "#999999";
-                    let entries = entriesForSeason(year, season);
-                    if (!entries.length) return;
-
-                    const targetTime = TARGET_DATE.getTime();
-                    const actualEntries = year === currentYear
-                        ? entries.filter((entry) => entry.date.getTime() <= targetTime)
-                        : entries;
-                    const forecastEntries = year === currentYear
-                        ? entries.filter((entry) => entry.date.getTime() > targetTime)
-                        : [];
-
-                    let cumulative = 0;
-                    const actualPoints = actualEntries.map((entry, pointIdx) => {
-                        cumulative += entry.value;
-                        return { ...entry, seasonMean: cumulative / (pointIdx + 1) };
-                    });
-
-                    if (actualPoints.length) {
-                        traces.push({
-                            x: actualPoints.map((point) => seasonDayIndex(point, season)),
-                            y: actualPoints.map((point) => point.seasonMean),
-                            mode: "lines",
-                            name: `${year} (${seasonInfo.label} mean)`,
-                            line: { color, width: 2, dash: "solid" },
-                            customdata: actualPoints.map((point) => ({
-                                label: point.label,
-                                formatted: point.seasonMean.toFixed(2)
-                            })),
-                            hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                        });
-                    }
-
-                    if (forecastEntries.length) {
-                        let forecastCumulative = cumulative;
-                        const forecastPoints = forecastEntries.map((entry, pointIdx) => {
-                            forecastCumulative += entry.value;
-                            return { ...entry, seasonMean: forecastCumulative / (actualEntries.length + pointIdx + 1) };
-                        });
-                        const lastActual = actualPoints.length ? actualPoints[actualPoints.length - 1] : null;
-                        const connectorX = lastActual ? [seasonDayIndex(lastActual, season)] : [];
-                        const connectorY = lastActual ? [lastActual.seasonMean] : [];
-                        const connectorCustom = lastActual ? [{ label: lastActual.label, formatted: lastActual.seasonMean.toFixed(2) }] : [];
-                        traces.push({
-                            x: [...connectorX, ...forecastPoints.map((point) => seasonDayIndex(point, season))],
-                            y: [...connectorY, ...forecastPoints.map((point) => point.seasonMean)],
-                            mode: "lines",
-                            name: `${year} forecast (${seasonInfo.label} mean)`,
-                            line: { color, width: 2, dash: "dot" },
-                            customdata: [...connectorCustom, ...forecastPoints.map((point) => ({
-                                label: point.label,
-                                formatted: point.seasonMean.toFixed(2)
-                            }))],
-                            hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                        });
-                    }
+                yearsToShow.forEach((year, index) => {
+                    const entries = entriesForSeason(year, season);
+                    traces.push(...CETOutlook.cumulative(entries, year, COLOR_PALETTE[index],
+                        row => seasonDayIndex(row, season), seasonInfo.label + " mean").traces);
                 });
 
                 const modeText = state.seasonMode === "last9"
@@ -2070,7 +1423,7 @@ body {
             function renderHexSeasonChart() {
                 const season = state.selectedHexSeason;
                 const seasonInfo = HEX_SEASONS[season];
-                const currentYear = new Date().getUTCFullYear();
+                const currentYear = latestComparisonYear;
 
                 if (state.hexSeasonYears === null) {
                     state.hexSeasonYears = getYearsForHexSeason(season, state.hexSeasonMode);
@@ -2082,70 +1435,10 @@ body {
                 if (alternateViews.render("hex-seasons", season, yearsToShow)) return;
                 const traces = [];
 
-                yearsToShow.forEach((year, idx) => {
-                    const color = COLOR_PALETTE[idx] || "#999999";
-                    const entries = entriesForHexSeason(year, season, state.rows);
-                    if (!entries.length) return;
-
-                    const actualEntries = year === currentYear
-                        ? entries.filter((entry) => new Date(entry.date) <= TARGET_DATE)
-                        : entries;
-                    const forecastEntries = year === currentYear
-                        ? entries.filter((entry) => new Date(entry.date) > TARGET_DATE)
-                        : [];
-
-                    let cumulative = 0;
-                    const actualPoints = actualEntries.map((entry, pointIdx) => {
-                        cumulative += entry.value;
-                        return { ...entry, hexSeasonMean: cumulative / (pointIdx + 1) };
-                    });
-
-                    if (actualPoints.length) {
-                        traces.push({
-                            x: actualPoints.map((point) => hexSeasonDayIndex(point, season)),
-                            y: actualPoints.map((point) => point.hexSeasonMean),
-                            mode: "lines",
-                            name: `${year} (${seasonInfo.label} mean)`,
-                            line: { color, width: 2, dash: "solid" },
-                            customdata: actualPoints.map((point) => {
-                                const date = new Date(point.date);
-                                return {
-                                    label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                    formatted: point.hexSeasonMean.toFixed(2)
-                                };
-                            }),
-                            hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                        });
-                    }
-
-                    if (forecastEntries.length) {
-                        let forecastCumulative = cumulative;
-                        const forecastPoints = forecastEntries.map((entry, pointIdx) => {
-                            forecastCumulative += entry.value;
-                            return { ...entry, hexSeasonMean: forecastCumulative / (actualEntries.length + pointIdx + 1) };
-                        });
-                        const connectorX = actualPoints.length ? [hexSeasonDayIndex(actualPoints[actualPoints.length - 1], season)] : [];
-                        const connectorY = actualPoints.length ? [actualPoints[actualPoints.length - 1].hexSeasonMean] : [];
-                        const connectorCustom = actualPoints.length ? [{
-                            label: new Date(actualPoints[actualPoints.length - 1].date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                            formatted: actualPoints[actualPoints.length - 1].hexSeasonMean.toFixed(2)
-                        }] : [];
-                        traces.push({
-                            x: [...connectorX, ...forecastPoints.map((point) => hexSeasonDayIndex(point, season))],
-                            y: [...connectorY, ...forecastPoints.map((point) => point.hexSeasonMean)],
-                            mode: "lines",
-                            name: `${year} forecast (${seasonInfo.label} mean)`,
-                            line: { color, width: 2, dash: "dot" },
-                            customdata: [...connectorCustom, ...forecastPoints.map((point) => {
-                                const date = new Date(point.date);
-                                return {
-                                    label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                                    formatted: point.hexSeasonMean.toFixed(2)
-                                };
-                            })],
-                            hovertemplate: "%{customdata.label}<br>Mean: %{customdata.formatted}°C<extra></extra>"
-                        });
-                    }
+                yearsToShow.forEach((year, index) => {
+                    const entries = entriesForHexSeason(year, season);
+                    traces.push(...CETOutlook.cumulative(entries, year, COLOR_PALETTE[index],
+                        row => hexSeasonDayIndex(row, season), seasonInfo.label + " mean").traces);
                 });
 
                 const modeText = state.hexSeasonMode === "last9"
@@ -2179,6 +1472,22 @@ body {
             }
 
             function renderYearList() {
+                const options = document.getElementById("forecast-year-options");
+                options.replaceChildren();
+                for (const year of new Set(future.map(row => row.year))) {
+                    if (state.years.includes(year)) continue;
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    const replaced = state.years.length === MAX_YEARS ? Math.min(...state.years) : null;
+                    button.textContent = replaced ? `Show ${year} in place of ${replaced}` : `Show ${year}`;
+                    button.addEventListener("click", () => {
+                        state.years = [...state.years.filter(y => y !== replaced), year].sort((a, b) => b - a);
+                        state.annualYearsCustom = true;
+                        renderYearList();
+                        renderChart();
+                    });
+                    options.appendChild(button);
+                }
                 listEl.innerHTML = "";
                 state.years.forEach((year, idx) => {
                     const li = document.createElement("li");
@@ -2373,7 +1682,7 @@ body {
                         if (errorElSeason) errorElSeason.textContent = "Enter a valid year.";
                         return;
                     }
-                    if (!entriesForSeason(year, state.selectedSeason, state.rows).length) {
+                    if (!entriesForSeason(year, state.selectedSeason).length) {
                         if (errorElSeason) errorElSeason.textContent = "Year not found in season.";
                         return;
                     }
@@ -2407,7 +1716,7 @@ body {
                         if (errorElHexSeason) errorElHexSeason.textContent = "Enter a valid year.";
                         return;
                     }
-                    if (!entriesForHexSeason(year, state.selectedHexSeason, state.rows).length) {
+                    if (!entriesForHexSeason(year, state.selectedHexSeason).length) {
                         if (errorElHexSeason) errorElHexSeason.textContent = "Year not found in hex-season.";
                         return;
                     }
