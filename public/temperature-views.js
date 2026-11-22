@@ -17,7 +17,7 @@
             const rankLabel = rainfall ? 'Wetness rank' : 'Warmth rank';
             const dailyBounds = rainfall ? [['high', 'Wettest daily', '#3985cb']]
                 : [['low', 'Coldest daily', '#3985cb'], ['high', 'Warmest daily', '#d77831']];
-            const archive = A.createArchive(observedRows);
+            const archive = A.createArchive(observedRows, window.earlyMonthlyObservations);
             const modes = {}, recordYears = {}, historyRanges = {};
             const buttons = [...document.querySelectorAll('[data-chart-mode]')];
             const dailyControls = document.getElementById('daily-controls');
@@ -143,7 +143,7 @@
                 const comparison = toDate ? A.historyToDate(archive, period, rainfall ? 'total' : 'mean') : null;
                 const rows = comparison ? comparison.rows : A.history(archive, period, rainfall ? 'total' : 'mean');
                 if (historyNote) historyNote.textContent = comparison?.expected
-                    ? `${dateLabel(comparison.start)} – ${dateLabel(comparison.end)} · ${comparison.expected} matching calendar dates in each year. 29 February excluded. Data through ${dateLabel(comparison.cutoff)}.` : '';
+                    ? `${dateLabel(comparison.start)} – ${dateLabel(comparison.end)} · ${comparison.expected} matching calendar dates in each year. Daily series only. 29 February excluded. Data through ${dateLabel(comparison.cutoff)}.` : '';
                 if (comparison && !comparison.expected) {
                     Plotly.purge(chart);
                     const message = document.createElement('p');
@@ -156,7 +156,7 @@
                 const complete = rows.filter(row => row.complete);
                 const incomplete = rows.filter(row => !row.complete);
                 const ranked = complete.slice().sort((a, b) => b.value - a.value);
-                const detail = row => `${period.label} ${row.year}<br>${format(row.value)}<br>${row.days}/${row.expected} observed days<br>${dateLabel(row.windowStart || row.first)} – ${dateLabel(row.windowEnd || row.last)}${row.complete ? `<br>${rankLabel}: ${row.rank} of ${complete.length}` : '<br>Incomplete · not ranked'}`;
+                const detail = row => `${period.label} ${row.year}<br>${format(row.value)}<br>${row.coverage || `${row.days}/${row.expected} observed days`}<br>${dateLabel(row.windowStart || row.first)} – ${dateLabel(row.windowEnd || row.last)}${row.complete ? `<br>${rankLabel}: ${row.rank} of ${complete.length}` : '<br>Incomplete · not ranked'}`;
                 const traces = [{ x: rows.map(row => row.year), y: rows.map(row => row.complete ? row.value : null),
                     type: 'scatter', mode: 'lines+markers', name: toDate ? 'Matching dates' : 'Complete periods',
                     line: { color: '#3985cb', width: 1.3 }, marker: { size: 4 }, connectgaps: false,
@@ -185,12 +185,12 @@
                     : ' Hollow diamonds show incomplete periods; these are not ranked against complete periods.';
                 if (reference) summary.textContent = `${reference.year}: ${format(reference.value)}. ${reference.complete ? `${rankLabel}: ${reference.rank} of ${complete.length}.` : `${reference.days}/${reference.expected} observed days; not ranked.`} ${summary.textContent}`;
                 if (period.winter) summary.textContent += ' Winter is labelled by the January/February year.';
-                extra.innerHTML = `<details><summary>All years · values and rankings</summary><p class="hint">${rainfall ? 'Observed rainfall only. Projections excluded.' : 'Observed daily CET only. Forecasts excluded.'} Rank 1 is ${highLabel.toLowerCase()}; ties share a rank.${toDate ? ' All years use the matching dates shown above; 29 February is excluded.' : ''}</p>${table(['Year', rainfall ? 'Total rainfall' : 'Mean CET', 'Observed days', rankLabel], rows.slice().reverse().map(row => [row.year, format(row.value), `${row.days}/${row.expected}${row.complete ? '' : row.first ? ` · incomplete<br>${dateLabel(row.first)} – ${dateLabel(row.last)}` : ' · no observations'}`, row.rank ?? '—']), rainfall ? 'Historical rainfall totals' : 'Historical CET means')}</details>`;
+                extra.innerHTML = `<details><summary>All years · values and rankings</summary><p class="hint">${rainfall ? 'Observed rainfall only. Projections excluded.' : 'Observed CET only. Forecasts excluded.'} Rank 1 is ${highLabel.toLowerCase()}; ties share a rank.${toDate ? ' All years use the matching dates shown above; 29 February is excluded.' : ''}</p>${table(['Year', rainfall ? 'Total rainfall' : 'Mean CET', 'Coverage', rankLabel], rows.slice().reverse().map(row => [row.year, format(row.value), `${row.coverage || `${row.days}/${row.expected} days`}${row.complete ? '' : row.first ? ` · incomplete<br>${dateLabel(row.first)} – ${dateLabel(row.last)}` : ' · no observations'}`, row.rank ?? '—']), rainfall ? 'Historical rainfall totals' : 'Historical CET means')}</details>`;
             }
 
             function renderIndividual() {
                 if (!individualPicker) { summary.textContent = 'Refresh the page to load the year comparison controls.'; return; }
-                const available = [...new Set(A.periods(currentView).flatMap(period => A.years(archive, period)))].sort((a,b) => b-a);
+                const available = [...new Set(A.periods(currentView).flatMap(period => A.comparisonYears(archive, period)))].sort((a,b) => b-a);
                 const years = individualPicker.update(available, Number(archive.latest?.slice(0, 4)));
                 const breakdown = year => A.breakdown(archive, currentView, year, rainfall ? 'total' : 'mean');
                 const series = years.map(year => ({ year, colour: individualPicker.colour(year), rows: breakdown(year) }));
@@ -210,7 +210,7 @@
                     ? ' Hatched bars show incomplete totals.' : ' Hollow diamonds show means for incomplete periods.';
                 if (rows.some(row => !row.days)) summary.textContent += ' Periods without observations are left blank.';
                 const tableRows = categories.flatMap((_,i) => series.map(({rows}) => rows[i]));
-                extra.innerHTML = `<details><summary>Individual values · ${series.map(series => series.year).join(', ')}</summary>${table(['Period', 'Year / reference', rainfall ? 'Total rainfall' : 'Mean CET', 'Coverage', 'Date range'], tableRows.map(row => [row.label, row.year, format(row.value), row.average ? `${row.years}/30 complete years` : `${row.days}/${row.expected} days${row.complete ? '' : row.days ? ' · incomplete' : ' · no observations'}`, row.average ? '1991–2020' : `${dateLabel(row.start)} – ${dateLabel(row.end)}`]), 'Selected years period breakdown')}</details>`;
+                extra.innerHTML = `<details><summary>Individual values · ${series.map(series => series.year).join(', ')}</summary>${table(['Period', 'Year / reference', rainfall ? 'Total rainfall' : 'Mean CET', 'Coverage', 'Date range'], tableRows.map(row => [row.label, row.year, format(row.value), row.average ? `${row.years}/30 complete years` : `${row.coverage || `${row.days}/${row.expected} days`}${row.complete ? '' : row.days ? ' · incomplete' : ' · no observations'}`, row.average ? '1991–2020' : `${dateLabel(row.start)} – ${dateLabel(row.end)}`]), 'Selected years period breakdown')}</details>`;
             }
 
             return {

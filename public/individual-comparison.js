@@ -98,7 +98,7 @@
             x: labels, y: rows.map(row => row.value), name: String(year), legendgroup: String(year),
             text: rows.map(row => average
                 ? `${row.label} · ${AVERAGE_LABEL}<br>${row.years}/30 complete years`
-                : `${row.label} ${year}<br>${formatDate(row.start)} – ${formatDate(row.end)}<br>${row.days ?? row.count}/${row.expected} ${sunshine ? 'months' : 'observed days'}${row.complete ? '' : '<br>Incomplete period'}`),
+                : `${row.label} ${year}<br>${formatDate(row.start)} – ${formatDate(row.end)}<br>${row.coverage || `${row.days ?? row.count}/${row.expected} ${sunshine ? 'months' : 'observed days'}`}${row.complete ? '' : '<br>Incomplete period'}`),
             hovertemplate: `%{text}<br>${temperature ? 'Mean CET' : sunshine ? 'Sunshine' : 'Total rainfall'}: %{y:.${sunshine ? 1 : 2}f}${unit}<extra></extra>`,
             ...(temperature ? {
                 type: 'scatter', mode: 'lines+markers', connectgaps: false, line: { color: colour, width: average ? 3 : 2, dash: average ? 'dash' : 'solid' },

@@ -28,15 +28,36 @@
     }
 
     function breakdown(archive, view, year, aggregation = 'mean') {
-        return periods(view).map(period => {
-            const rows = entries(archive, period, year), calendar = slots(period, year);
-            const total = rows.length ? rows.reduce((sum, row) => sum + row.value, 0) : null;
-            const mean = rows.length ? total / rows.length : null;
-            return { label: period.label, year, value: aggregation === 'total' ? total : mean, total, mean,
-                days: rows.length, expected: calendar.length, complete: rows.length === calendar.length,
-                start: calendar[0].iso, end: calendar.at(-1).iso,
-                first: rows[0]?.iso ?? null, last: rows.at(-1)?.iso ?? null };
-        });
+        return periods(view).map(period => periodValue(archive, period, year, aggregation));
+    }
+
+    function periodValue(archive, period, year, aggregation) {
+        const calendar = slots(period, year);
+        const rows = entries(archive, period, year);
+        const expected = calendar.length;
+        let total = rows.reduce((sum, row) => sum + row.value, 0);
+        let days = rows.length, months = 0;
+        let first = rows[0]?.iso, last = rows.at(-1)?.iso;
+        for (const month of period.months) {
+            const calendarYear = period.winter && month === 12 ? year - 1 : year;
+            const value = archive.monthly[calendarYear]?.[month - 1];
+            if (!Number.isFinite(value)) continue;
+            const length = daysInMonth(calendarYear, month);
+            days += length;
+            months++;
+            total += aggregation === 'total' ? value : length * value;
+            const start = iso(calendarYear, month, 1), end = iso(calendarYear, month, length);
+            if (!first || start < first) first = start;
+            if (!last || end > last) last = end;
+        }
+        const mean = days ? total / days : null;
+        let value = days ? (aggregation === 'total' ? total : mean) : null;
+        if (months === 12) value = archive.monthly[year][12];
+        const coverage = months ? [months + (months === 1 ? ' monthly value' : ' monthly values'),
+            ...(rows.length ? [rows.length + ' daily values'] : [])].join(' + ') : null;
+        return { label: period.label, year, value, total: days ? total : null, mean, days, expected,
+            coverage, complete: days === expected, start: calendar[0].iso, end: calendar.at(-1).iso,
+            first: first ?? null, last: last ?? null, rank: null };
     }
 
     // A leap-year calendar aligns 1 March with 1 March in every daily trace.
@@ -59,7 +80,7 @@
         return { year, month, day, key: key(month, day), iso: iso(year, month, day), value: row.value };
     }
 
-    function createArchive(observedRows) {
+    function createArchive(observedRows, monthly = {}) {
         const rows = [...new Map(observedRows.map(row => {
             const entry = normalize(row);
             return [entry.iso, entry];
@@ -77,7 +98,7 @@
                 } else if (row.value === record[bound]) record[`${bound}Years`].push(row.year);
             }
         }
-        return { rows, byYear, records, latest: rows.at(-1)?.iso };
+        return { rows, byYear, records, monthly, latest: rows.at(-1)?.iso };
     }
 
     function periodYear(row, period) {
@@ -123,16 +144,17 @@
     }
 
     function history(archive, period, aggregation = 'mean') {
-        const result = years(archive, period).map(year => {
-            const rows = entries(archive, period, year);
-            const expected = slots(period, year).length;
-            const total = rows.reduce((sum, row) => sum + row.value, 0);
-            const mean = total / rows.length;
-            return { year, mean, total, value: aggregation === 'total' ? total : mean,
-                days: rows.length, expected, complete: rows.length === expected,
-                first: rows[0].iso, last: rows.at(-1).iso, rank: null };
-        });
-        return rankHistory(result);
+        return rankHistory(comparisonYears(archive, period).map(year => periodValue(archive, period, year, aggregation)));
+    }
+
+    function comparisonYears(archive, period) {
+        const available = new Set(years(archive, period));
+        for (const key of Object.keys(archive.monthly)) {
+            const year = Number(key);
+            available.add(year);
+            if (period.winter) available.add(year + 1);
+        }
+        return [...available].sort((a, b) => a - b);
     }
 
     function rankHistory(result) {
@@ -168,7 +190,7 @@
         return { ...window, rows: rankHistory(rows) };
     }
 
-    const api = { period, periods, breakdown, slots, createArchive, years, entries, daily, heldRecords, history, historyToDate };
+    const api = { period, periods, breakdown, slots, createArchive, years, comparisonYears, entries, daily, heldRecords, history, historyToDate };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.WeatherAnalysis = root.CETAnalysis = api;
 })(typeof window !== 'undefined' ? window : globalThis);
