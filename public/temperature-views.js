@@ -114,7 +114,7 @@
                         if (previous?.year === points[first].year) points[first - 1] = previous;
                         traces.push({ x, y: points.map(row => row?.value ?? null), type: 'scatter', mode: 'lines+markers',
                             name: name + (projected ? ' · 2017–2026 daily mean' : ''),
-                            line: { color: colour, width: 2, dash: projected ? 'dash' : 'dot' },
+                            line: { color: colour, width: 2, dash: 'dot' },
                             marker: { size: 3 }, connectgaps: false,
                             text: points.map(row => row ? dateLabel(row.iso) + ' · ' + (row.source || 'observed') : ''),
                             hovertemplate: `%{text}<br>${dailyLabel}: %{y:.${precision}f}${unit}<extra></extra>` });
@@ -144,7 +144,7 @@
                     ...(period.months.length > 1 ? { tickmode: 'array', tickvals: ticks.map(day => day.x), ticktext: ticks.map(day => day.label.slice(2)) } : {}),
                     range: [1, data.calendar.length]
                 }, rainfall ? 'Daily rainfall (mm)' : 'Daily mean temperature (°C)');
-                summary.textContent = `Observed data through ${dateLabel(archive.latest)}. ${rainfall ? 'Records use observed rainfall only.' : 'Forecasts are dotted and excluded from records.'}${period.winter ? ' Winter is labelled by the January/February year.' : ''}`;
+                summary.textContent = `Observed data through ${dateLabel(archive.latest)}. ${rainfall ? 'Records use observed rainfall only.' : 'Forecasts and projections are dotted and excluded from records.'}${period.winter ? ' Winter is labelled by the January/February year.' : ''}`;
             }
 
             function renderHistory(period) {

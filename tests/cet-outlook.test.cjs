@@ -36,7 +36,7 @@ test('February–December placeholders use calendar-day normals and yield to for
         [1,31,'forecast',6], [2,1,'projection',4], [2,2,'forecast',3], [12,31,'projection',7]
     ]);
     const traces = cumulative(future, 2027, 'red', r => r.doy, 'YTD mean').traces;
-    assert.equal(traces[1].line.dash, 'dash');
+    assert.ok(traces.every(trace => trace.line.dash === 'dot'));
     assert.deepEqual(traces[1].y, [6,5]);
     assert.deepEqual(outlook([...normals,row('2027-02-02', 10)], forecasts).map(r => r.value), [7]);
 });

@@ -43,7 +43,7 @@
                 const prefix = row.source ? row.year + ' ' + row.source : String(year);
                 const method = row.source === 'projection' ? ' · 2017–2026 daily mean' : '';
                 const trace = { x: [], y: [], text: [], mode: 'lines', name: prefix + ' (' + label + ')' + method,
-                    line: { color, width: 2, dash: row.source === 'projection' ? 'dash' : row.source ? 'dot' : 'solid' },
+                    line: { color, width: 2, dash: row.source ? 'dot' : 'solid' },
                     hovertemplate: '%{text}<br>%{y:.2f}°C<extra>%{fullData.name}</extra>' };
                 if (previous && row.year === previous.year && row.date - previous.date === 86400000) {
                     trace.x.push(previous.x); trace.y.push(previous.y); trace.text.push(previous.label);
