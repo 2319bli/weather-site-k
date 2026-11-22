@@ -360,7 +360,6 @@ body {
                         <input id="annual-up-to-date" type="date" style="flex: 1 1 auto; padding: 6px 8px; font-size: 1rem; border: 1px solid #dcdcdc; border-radius: 4px;" />
                     </div>
                 </div>
-                <div id="forecast-year-options"></div>
                 <form id="year-form">
                     <input
                         id="year-input"
@@ -1472,22 +1471,6 @@ body {
             }
 
             function renderYearList() {
-                const options = document.getElementById("forecast-year-options");
-                options.replaceChildren();
-                for (const year of new Set(future.map(row => row.year))) {
-                    if (state.years.includes(year)) continue;
-                    const button = document.createElement("button");
-                    button.type = "button";
-                    const replaced = state.years.length === MAX_YEARS ? Math.min(...state.years) : null;
-                    button.textContent = replaced ? `Show ${year} in place of ${replaced}` : `Show ${year}`;
-                    button.addEventListener("click", () => {
-                        state.years = [...state.years.filter(y => y !== replaced), year].sort((a, b) => b - a);
-                        state.annualYearsCustom = true;
-                        renderYearList();
-                        renderChart();
-                    });
-                    options.appendChild(button);
-                }
                 listEl.innerHTML = "";
                 state.years.forEach((year, idx) => {
                     const li = document.createElement("li");
