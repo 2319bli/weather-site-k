@@ -165,6 +165,32 @@
         return result;
     }
 
+    // Use the continuous run of complete months from the start of the reference period.
+    function historyCompleteMonths(archive, period, aggregation = 'mean') {
+        const latest = archive.rows.at(-1);
+        const referenceYear = latest ? periodYear(latest, period) : null;
+        const result = { referenceYear, cutoff: archive.latest, start: null, end: null, expected: 0, rows: [] };
+        if (!latest) return result;
+        const months = [];
+        for (const month of period.months) {
+            const current = periodValue(archive, { ...period, months: [month] }, referenceYear, aggregation);
+            if (!current.complete || current.end > latest.iso) break;
+            months.push(month);
+            result.start ??= current.start;
+            result.end = current.end;
+        }
+        result.expected = months.length;
+        if (!months.length) return result;
+        const matched = { ...period, months };
+        const candidates = comparisonYears(archive, period).filter(year => year <= referenceYear);
+        result.rows = rankHistory(candidates.map(year => {
+            const row = periodValue(archive, matched, year, aggregation);
+            if (!row.complete) row.value = null;
+            return row;
+        }));
+        return result;
+    }
+
     // Compare identical calendar dates, not day-of-year numbers. February 29
     // is omitted in every year; a missing observation leaves the year unranked.
     function historyToDate(archive, period, aggregation = 'mean') {
@@ -190,7 +216,7 @@
         return { ...window, rows: rankHistory(rows) };
     }
 
-    const api = { period, periods, breakdown, slots, createArchive, years, comparisonYears, entries, daily, heldRecords, history, historyToDate };
+    const api = { period, periods, breakdown, slots, createArchive, years, comparisonYears, entries, daily, heldRecords, history, historyToDate, historyCompleteMonths };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.WeatherAnalysis = root.CETAnalysis = api;
 })(typeof window !== 'undefined' ? window : globalThis);

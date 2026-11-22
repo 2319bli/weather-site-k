@@ -138,17 +138,26 @@
             }
 
             function renderHistory(period) {
-                const toDate = historyRanges[currentView] === 'ytd';
-                const rangeLabel = currentView === 'annual' ? 'Year to date' : 'Period to date';
-                const comparison = toDate ? A.historyToDate(archive, period, rainfall ? 'total' : 'mean') : null;
+                const monthly = historyRanges[currentView] === 'months';
+                const toDate = monthly || historyRanges[currentView] === 'ytd';
+                const rangeLabel = (currentView === 'annual' ? 'Year to date' : 'Period to date') + (monthly ? ' (complete months)' : '');
+                const compare = monthly ? A.historyCompleteMonths : A.historyToDate;
+                const comparison = toDate ? compare(archive, period, rainfall ? 'total' : 'mean') : null;
                 const rows = comparison ? comparison.rows : A.history(archive, period, rainfall ? 'total' : 'mean');
-                if (historyNote) historyNote.textContent = comparison?.expected
-                    ? `${dateLabel(comparison.start)} – ${dateLabel(comparison.end)} · ${comparison.expected} matching calendar dates in each year. Daily series only. 29 February excluded. Data through ${dateLabel(comparison.cutoff)}.` : '';
+                if (historyNote) {
+                    historyNote.textContent = '';
+                    if (comparison?.expected) {
+                        const dates = `${dateLabel(comparison.start)} – ${dateLabel(comparison.end)}`;
+                        historyNote.textContent = monthly
+                            ? `${dates} · Same calendar months in every year, including leap days.`
+                            : `${dates} · ${comparison.expected} matching calendar dates in each year. Daily series only. 29 February excluded. Data through ${dateLabel(comparison.cutoff)}.`;
+                    }
+                }
                 if (comparison && !comparison.expected) {
                     Plotly.purge(chart);
                     const message = document.createElement('p');
                     message.className = 'history-empty';
-                    message.textContent = `No observations for ${period.label} ${comparison.referenceYear} yet.`;
+                    message.textContent = monthly ? `No complete months from the start of ${period.label} ${comparison.referenceYear} yet.` : `No observations for ${period.label} ${comparison.referenceYear} yet.`;
                     chart.replaceChildren(message);
                     summary.textContent = `Observed data through ${dateLabel(comparison.cutoff)}. Choose Full period to see earlier years for this period.`;
                     return;
@@ -158,10 +167,10 @@
                 const ranked = complete.slice().sort((a, b) => b.value - a.value);
                 const detail = row => `${period.label} ${row.year}<br>${format(row.value)}<br>${row.coverage || `${row.days}/${row.expected} observed days`}<br>${dateLabel(row.windowStart || row.first)} – ${dateLabel(row.windowEnd || row.last)}${row.complete ? `<br>${rankLabel}: ${row.rank} of ${complete.length}` : '<br>Incomplete · not ranked'}`;
                 const traces = [{ x: rows.map(row => row.year), y: rows.map(row => row.complete ? row.value : null),
-                    type: 'scatter', mode: 'lines+markers', name: toDate ? 'Matching dates' : 'Complete periods',
+                    type: 'scatter', mode: 'lines+markers', name: monthly ? 'Matching months' : toDate ? 'Matching dates' : 'Complete periods',
                     line: { color: '#3985cb', width: 1.3 }, marker: { size: 4 }, connectgaps: false,
                     text: rows.map(detail), hovertemplate: '%{text}<extra></extra>' }];
-                if (incomplete.length) traces.push({ x: incomplete.map(row => row.year), y: incomplete.map(row => row.value),
+                if (incomplete.length && !monthly) traces.push({ x: incomplete.map(row => row.year), y: incomplete.map(row => row.value),
                     type: 'scatter', mode: 'markers', name: toDate ? 'Missing data' : 'Incomplete periods',
                     marker: { color: '#d77831', size: 10, symbol: 'diamond-open', line: { width: 2 } },
                     text: incomplete.map(detail), hovertemplate: '%{text}<extra></extra>' });
@@ -180,12 +189,13 @@
                 summary.textContent = complete.length
                     ? `${complete.length} complete ${toDate ? 'comparisons' : 'periods'}. ${highLabel}: ${ranked.filter(row => row.rank === 1).map(row => row.year).join(', ')} (${format(ranked[0].value)}). ${lowLabel}: ${complete.filter(row => Math.abs(row.value - ranked.at(-1).value) < 1e-10).map(row => row.year).join(', ')} (${format(ranked.at(-1).value)}).`
                     : `No complete ${toDate ? 'comparisons' : 'periods'} available.`;
-                if (incomplete.length) summary.textContent += toDate
+                if (incomplete.length) summary.textContent += monthly
+                    ? ' Years with incomplete coverage are unranked and shown as gaps.' : toDate
                     ? ' Years with missing observations are unranked; hollow diamonds show their available data.'
                     : ' Hollow diamonds show incomplete periods; these are not ranked against complete periods.';
                 if (reference) summary.textContent = `${reference.year}: ${format(reference.value)}. ${reference.complete ? `${rankLabel}: ${reference.rank} of ${complete.length}.` : `${reference.days}/${reference.expected} observed days; not ranked.`} ${summary.textContent}`;
                 if (period.winter) summary.textContent += ' Winter is labelled by the January/February year.';
-                extra.innerHTML = `<details><summary>All years · values and rankings</summary><p class="hint">${rainfall ? 'Observed rainfall only. Projections excluded.' : 'Observed CET only. Forecasts excluded.'} Rank 1 is ${highLabel.toLowerCase()}; ties share a rank.${toDate ? ' All years use the matching dates shown above; 29 February is excluded.' : ''}</p>${table(['Year', rainfall ? 'Total rainfall' : 'Mean CET', 'Coverage', rankLabel], rows.slice().reverse().map(row => [row.year, format(row.value), `${row.coverage || `${row.days}/${row.expected} days`}${row.complete ? '' : row.first ? ` · incomplete<br>${dateLabel(row.first)} – ${dateLabel(row.last)}` : ' · no observations'}`, row.rank ?? '—']), rainfall ? 'Historical rainfall totals' : 'Historical CET means')}</details>`;
+                extra.innerHTML = `<details><summary>All years · values and rankings</summary><p class="hint">${rainfall ? 'Observed rainfall only. Projections excluded.' : 'Observed CET only. Forecasts excluded.'} Rank 1 is ${highLabel.toLowerCase()}; ties share a rank.${toDate && !monthly ? ' All years use the matching dates shown above; 29 February is excluded.' : ''}</p>${table(['Year', rainfall ? 'Total rainfall' : 'Mean CET', 'Coverage', rankLabel], rows.slice().reverse().map(row => [row.year, format(row.value), `${row.coverage || `${row.days}/${row.expected} days`}${row.complete ? '' : row.first ? ` · incomplete<br>${dateLabel(row.first)} – ${dateLabel(row.last)}` : ' · no observations'}`, row.rank ?? '—']), rainfall ? 'Historical rainfall totals' : 'Historical CET means')}</details>`;
             }
 
             function renderIndividual() {
@@ -227,7 +237,10 @@
                     if (historyControls) historyControls.hidden = mode !== 'historical';
                     rangeButtons.forEach(button => {
                         button.setAttribute('aria-pressed', String(button.dataset.historyRange === (historyRanges[view] || 'full')));
-                        if (button.dataset.historyRange === 'ytd') button.textContent = view === 'annual' ? 'Year to date' : 'Period to date';
+                        if (button.dataset.historyRange !== 'full') {
+                            const label = view === 'annual' ? 'Year to date' : 'Period to date';
+                            button.textContent = button.dataset.historyRange === 'months' ? label + ' (complete months)' : label;
+                        }
                     });
                     extra.replaceChildren();
                     if (mode === 'cumulative') return false;

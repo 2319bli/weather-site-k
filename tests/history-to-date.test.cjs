@@ -139,3 +139,33 @@ test('year-to-date archive values and reference ranks match independent CET/EWP 
         assert.equal(current.complete, true);
     }
 });
+
+test('complete months compare early monthly and daily observations through the same month', () => {
+    const monthly = { 1768: [0, 10, ...Array(10).fill(100)] };
+    const archive = A.createArchive([
+        ...days('2024-01-01', '2024-02-29', 1),
+        ...days('2025-01-01', '2025-02-27', 100),
+        ...days('2026-01-01', '2026-02-28', 2), row('2026-03-01', 999)
+    ], monthly);
+    const annual = A.period('annual');
+    const temp = A.historyCompleteMonths(archive, annual);
+    assert.equal(temp.end, '2026-02-28');
+    assert.equal(temp.expected, 2);
+    assert.deepEqual(temp.rows.map(r => r.value), [290 / 60, 1, null, 2]);
+    assert.deepEqual(temp.rows.map(r => r.rank), [1, 3, null, 2]);
+    const rain = A.historyCompleteMonths(archive, annual, 'total');
+    assert.deepEqual(rain.rows.map(r => r.value), [10, 60, null, 118]);
+    assert.equal(A.historyCompleteMonths(archive, A.period('months', 3)).expected, 0);
+});
+
+test('complete months stop at a gap and respect a winter crossing the archive boundary', () => {
+    const archive = A.createArchive([
+        ...days('1931-01-01', '1931-01-31', 1),
+        ...days('1931-02-02', '1931-03-31', 2)
+    ], { 1930: Array(12).fill(10) });
+    const result = A.historyCompleteMonths(archive, A.period('seasons', 'winter'), 'total');
+    assert.equal(result.start, '1930-12-01');
+    assert.equal(result.end, '1931-01-31');
+    assert.equal(result.rows.at(-1).value, 41);
+    assert.equal(A.historyCompleteMonths(archive, A.period('annual')).end, '1931-01-31');
+});
