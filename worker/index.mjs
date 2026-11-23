@@ -2,7 +2,7 @@ import terminalHtml from './terminal.html';
 import loginHtml from './login.html';
 import baseline from './baseline.json';
 import { cookie, digest, sessionHash, SESSION_SECONDS, verifyPassword } from './auth.mjs';
-import { DATA_FILES, applyUpdates, csvText, forecastRows, validateUpdates } from './data.mjs';
+import { DATA_FILES, applyUpdates, csvText, forecastRows, latestDate, validateUpdates } from './data.mjs';
 import { EXTREME_FILES, EXTREME_URLS, mergeRecords, parseExtremeCsv, validateRecords } from '../public/extremes.mjs';
 import { SUNSHINE, sunshineDataset, sourceUrl, parseSunshine, appendSunshine } from '../public/sunshine-data.mjs';
 
@@ -44,6 +44,39 @@ async function readState(env, key) {
 }
 async function writeState(env, key, value) {
   await env.DB.prepare('INSERT INTO state(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, version=state.version+1').bind(key, JSON.stringify(value)).run();
+}
+// D1 runs the batch as one transaction. A stale version skips both the
+// timestamps and the data write, including when a CET save trims the forecast.
+async function saveDataset(env, key, value, version, datasets) {
+  const stamp = env.DB.prepare(`INSERT INTO state(key,value)
+    SELECT ?,strftime('%Y-%m-%dT%H:%M:%fZ','now') FROM state WHERE key=? AND version=?
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
+  const results = await env.DB.batch([
+    ...datasets.map(dataset => stamp.bind(`updated-${dataset}`, key, version)),
+    env.DB.prepare('UPDATE state SET value=?,version=version+1 WHERE key=? AND version=?')
+      .bind(JSON.stringify(value), key, version)
+  ]);
+  return results.at(-1).meta.changes === 1;
+}
+async function datasetStatus(env) {
+  const { results } = await env.DB.prepare(`SELECT key,value FROM state WHERE key='weather'
+    OR key LIKE 'updated-%' OR key LIKE 'extremes-%' OR key LIKE 'sunshine-%'`).all();
+  const values = Object.fromEntries(results.map(row => [row.key, row.value]));
+  const weather = JSON.parse(values.weather);
+  const latest = { ...baseline };
+  for (const dataset of ['cet', 'ewp']) latest[dataset] = latestDate(weather, baseline, dataset);
+  latest.for = [baseline.for, ...Object.keys(weather.forecast)].filter(date => date > latest.cet).sort().at(-1) || null;
+  for (const dataset of Object.keys(EXTREME_FILES)) {
+    const overrides = JSON.parse(values[`extremes-${dataset}`] || '{}');
+    const lastYear = Math.max(Number(baseline[dataset].slice(0, 4)), ...Object.keys(overrides).map(Number));
+    latest[dataset] = overrides[lastYear]?.iso || baseline[dataset];
+  }
+  for (const dataset of Object.keys(SUNSHINE)) {
+    latest[dataset] = JSON.parse(values[`sunshine-${dataset}`] || '[]').at(-1)?.month || baseline[dataset];
+  }
+  return Object.entries(latest).map(([dataset, latestDate]) => ({
+    dataset, latestDate, updatedAt: values[`updated-${dataset}`] || null
+  }));
 }
 async function originalCsv(env, filename) {
   const result = await env.ASSETS.fetch(new Request(`https://assets.invalid/data/${filename}`));
@@ -90,11 +123,8 @@ async function updateWeather(request, env, isForecast) {
     removedForecast = forecastRows(original, weather, baseline).filter(([date]) => date <= updates.at(-1).iso).length;
   }
   applyUpdates(weather, baseline, dataset, updates);
-  // One compare-and-swap commits observations and forecast removal together.
-  // A second editor must reload instead of overwriting another editor's work.
-  const result = await env.DB.prepare("UPDATE state SET value=?,version=version+1 WHERE key='weather' AND version=?")
-    .bind(JSON.stringify(weather), before.version).run();
-  if (result.meta.changes !== 1) return json({ error: 'Data changed in another session. Reload and retry.' }, 409);
+  const datasets = removedForecast ? [dataset, 'for'] : [dataset];
+  if (!await saveDataset(env, 'weather', weather, before.version, datasets)) return json({ error: 'Data changed in another session. Reload and retry.' }, 409);
   return json({ dataset, updated: updates.length, updates, removedForecast });
 }
 function terminalIndex(value) {
@@ -117,9 +147,7 @@ async function updateExtremes(request, env) {
   if (!before || before.version !== body.version) return json({ error: 'Records changed in another session. Run upd again to review the latest records.' }, 409);
   const overrides = JSON.parse(before.value);
   for (const record of records) overrides[record.year] = record;
-  const result = await env.DB.prepare('UPDATE state SET value=?,version=version+1 WHERE key=? AND version=?')
-    .bind(JSON.stringify(overrides), key, body.version).run();
-  if (result.meta.changes !== 1) return json({ error: 'Records changed in another session. Run upd again to review the latest records.' }, 409);
+  if (!await saveDataset(env, key, overrides, body.version, [body.dataset])) return json({ error: 'Records changed in another session. Run upd again to review the latest records.' }, 409);
   return json({ updated: records.length, version: body.version + 1 });
 }
 async function readSunshine(env, dataset) {
@@ -143,9 +171,7 @@ async function updateSunshine(request, env) {
   if (data.version !== before.version) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
   const merged = appendSunshine(data.records, body.updates);
   const updates = [...JSON.parse(before.value), ...merged.slice(data.records.length)];
-  const result = await env.DB.prepare('UPDATE state SET value=?,version=version+1 WHERE key=? AND version=?')
-    .bind(JSON.stringify(updates), key, before.version).run();
-  if (result.meta.changes !== 1) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
+  if (!await saveDataset(env, key, updates, before.version, [body.dataset])) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
   return json({ dataset: body.dataset, updated: body.updates.length, latest: updates.at(-1), version: before.version + 1 });
 }
 async function route(request, env) {
@@ -179,6 +205,7 @@ async function route(request, env) {
   }
   if (path.startsWith('/api/')) {
     if (!session) return json({ error: 'Please sign in again.' }, 401);
+    if (path === '/api/terminal/datasets' && request.method === 'GET') return json(await datasetStatus(env));
     if (path === '/api/logout' && request.method === 'POST') {
       await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(session).run();
       return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });

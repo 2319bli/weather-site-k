@@ -21,5 +21,15 @@ for (const [key, file] of Object.entries({ cet: 'MeanTempCET.csv', ewp: 'Precipi
   });
   latest[key] = dates.sort().at(-1);
 }
+const { EXTREME_FILES, parseExtremeCsv } = require('../public/extremes.mjs');
+const { SUNSHINE, parseSunshine } = require('../public/sunshine-data.mjs');
+const archive = file => fs.readFileSync(path.join(output, 'data', file), 'utf8');
+latest.for = archive('forecast_2026.csv').trim().split(/\r?\n/).map(line => line.split(',')[0]).sort().at(-1);
+for (const [key, file] of Object.entries(EXTREME_FILES)) {
+  latest[key] = parseExtremeCsv(archive(file)).map(record => record.iso).sort().at(-1);
+}
+for (const [key, region] of Object.entries(SUNSHINE)) {
+  latest[key] = parseSunshine(archive('sunshine/' + region.file)).records.at(-1).month;
+}
 fs.writeFileSync(path.join(root, 'worker/baseline.json'), JSON.stringify(latest, null, 2) + '\n');
 console.log('Worker assets prepared; historical CSV bytes preserved.');

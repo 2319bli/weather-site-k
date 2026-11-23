@@ -60,6 +60,7 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     for (const route of ['/terminal', '/terminal.html', '/']) assert.equal((await get(route)).status, 303);
     for (const route of ['/api/observed/update', '/api/forecast/update', '/api/extremes/update', '/api/sunshine/update', '/api/terminal/save', '/api/presets']) assert.equal((await post(route, {})).status, 401);
     assert.equal((await get('/api/terminal/saved?terminal=0')).status, 401);
+    assert.equal((await get('/api/terminal/datasets')).status, 401);
     assert.equal((await post('/api/login', { password: 'integration-test-only' }, { Origin: 'https://evil.test' })).status, 403);
     assert.equal((await post('/api/login', { password: 'wrong' })).status, 401);
     const login = await post('/api/login', { password: 'integration-test-only' });
@@ -70,6 +71,13 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     const page = await get('/terminal.html');
     assert.equal(page.status, 200);
     assert.ok((await page.text()).includes('id="terminal-input"'));
+    const status = async () => Object.fromEntries((await (await get('/api/terminal/datasets')).json()).map(row => [row.dataset, row]));
+    const initial = await status();
+    const baseline = require('../worker/baseline.json');
+    assert.equal(Object.keys(initial).length, 9);
+    for (const [key, date] of Object.entries(baseline)) {
+      assert.deepEqual(initial[key], { dataset: key, latestDate: date, updatedAt: null });
+    }
     for (const [dataset, file] of [['hei', 'hottest_days.json'], ['fei', 'coldest_days.json']]) {
       const originalResponse = await get('/data/' + file);
       assert.equal(originalResponse.headers.get('Access-Control-Allow-Origin'), '*');
@@ -85,6 +93,11 @@ test('Worker protects all admin routes and persists shared updates', async () =>
       assert.equal(current.records.length, original.records.length);
       assert.deepEqual(current.records.slice(0, -1), original.records.slice(0, -1));
       assert.equal(current.records.at(-1).iso, records[0].iso);
+      const saved = (await status())[dataset];
+      assert.equal(saved.latestDate, records[0].iso);
+      assert.ok(Number.isFinite(Date.parse(saved.updatedAt)));
+      assert.equal((await post('/api/extremes/update', update)).status, 409);
+      assert.deepEqual((await status())[dataset], saved);
       assert.equal((await post('/api/extremes/update', { ...update, version: current.version, records: [{ ...records[0], iso: '2027-02-29' }] })).status, 400);
     }
     for (const dataset of ['sunuk','suneng','suneaw','sunmid']) {
@@ -103,6 +116,9 @@ test('Worker protects all admin routes and persists shared updates', async () =>
       assert.deepEqual(current.records.slice(0,-1),original.records);
       assert.deepEqual(current.records.at(-1),{month:'2026-10',value:86.3});
       assert.deepEqual(current.published,original.published);
+      const saved = (await status())[dataset];
+      assert.equal(saved.latestDate, '2026-10');
+      assert.ok(Number.isFinite(Date.parse(saved.updatedAt)));
       for (const row of [{month:'2026-11',value:-1},{month:'2026-12',value:1},{month:'2026-13',value:1},{month:'2026-10',value:1}]) {
         assert.equal((await post('/api/sunshine/update',{...update,version:current.version,updates:[row]})).status,400);
       }
@@ -133,14 +149,29 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     assert.deepEqual((await (await get('/api/terminal/saved?terminal=1')).json()).entries, [{ input: 'dat cet', response: 'saved' }]);
     assert.equal((await post('/api/presets', { presets: { spring: 'rank table cet year high 10' } })).status, 200);
     assert.equal((await (await get('/api/presets')).json()).presets.spring, 'rank table cet year high 10');
-    const baseline = require('../worker/baseline.json');
     const next = new Date(Date.parse(baseline.cet) + 86400000).toISOString().slice(0, 10);
     const updates = [{ iso: next, value: 12.3, valueText: '12.30' }];
     assert.equal((await post('/api/forecast/update', { updates })).status, 200);
     assert.ok((await (await get('/data/forecast_2026.csv')).text()).includes(`${next},12.3`));
+    const beforeCet = await status();
+    assert.ok(Number.isFinite(Date.parse(beforeCet.for.updatedAt)));
+    assert.deepEqual(beforeCet.cet, initial.cet);
+    // Make the earlier save distinguishable even on a coarse test clock.
+    await db.prepare("UPDATE state SET value=? WHERE key='updated-for'").bind('2020-01-01T00:00:00.000Z').run();
     const results = await Promise.all([post('/api/observed/update', { dataset: 'cet', updates }), post('/api/observed/update', { dataset: 'cet', updates })]);
     assert.equal(results.filter(result => result.status === 200).length, 1);
     assert.ok(results.every(result => [200, 400, 409].includes(result.status)));
+    const afterCet = await status();
+    assert.equal(afterCet.cet.latestDate, next);
+    assert.ok(Number.isFinite(Date.parse(afterCet.cet.updatedAt)));
+    assert.ok(Date.parse(afterCet.for.updatedAt) >= Date.parse(beforeCet.for.updatedAt));
+    assert.deepEqual(afterCet.ewp, initial.ewp);
+    const nextEwp = new Date(Date.parse(baseline.ewp) + 86400000).toISOString().slice(0, 10);
+    assert.equal((await post('/api/observed/update', { dataset: 'ewp', updates: [{ iso: nextEwp, value: 0 }] })).status, 200);
+    const afterEwp = await status();
+    assert.equal(afterEwp.ewp.latestDate, nextEwp);
+    assert.ok(Number.isFinite(Date.parse(afterEwp.ewp.updatedAt)));
+    assert.deepEqual(afterEwp.for, afterCet.for);
     const data = await get('/data/MeanTempCET.csv');
     assert.equal(data.headers.get('Access-Control-Allow-Origin'), '*');
     const csv = await data.text();
