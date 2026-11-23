@@ -504,8 +504,8 @@ upd "
     <section class="dataset-panel" aria-labelledby="dataset-heading">
         <h2 class="visual-output-header" id="dataset-heading">Dataset updates</h2>
         <table class="rank-table" aria-labelledby="dataset-heading">
-            <thead><tr><th scope="col">Dataset</th><th scope="col">Latest entry</th><th scope="col">Last saved (UK time)</th></tr></thead>
-            <tbody id="dataset-rows"><tr><td colspan="3">Loading updates…</td></tr></tbody>
+            <thead><tr><th scope="col">Dataset</th><th scope="col">Last updated</th></tr></thead>
+            <tbody id="dataset-rows"><tr><td colspan="2">Loading updates…</td></tr></tbody>
         </table>
     </section>
 
@@ -632,10 +632,6 @@ upd "
                 sunuk: "Sunshine · UK", suneng: "Sunshine · England",
                 suneaw: "Sunshine · England and Wales", sunmid: "Sunshine · Midlands"
             };
-            const ukTime = new Intl.DateTimeFormat("en-GB", {
-                timeZone: "Europe/London", day: "numeric", month: "short", year: "numeric",
-                hour: "2-digit", minute: "2-digit"
-            });
             let panelRequest = 0;
             async function refreshDatasetPanel() {
                 const request = ++panelRequest;
@@ -644,11 +640,10 @@ upd "
                     const datasets = await requestJson("/api/terminal/datasets");
                     if (request !== panelRequest) return;
                     const fragment = document.createDocumentFragment();
-                    for (const { dataset, latestDate, updatedAt } of datasets) {
+                    for (const { dataset, latestDate } of datasets) {
                         const row = document.createElement("tr");
                         row.insertCell().textContent = datasetLabels[dataset];
                         row.insertCell().textContent = latestDate || "No entries";
-                        row.insertCell().textContent = updatedAt ? ukTime.format(new Date(updatedAt)) : "Not recorded";
                         fragment.append(row);
                     }
                     rows.replaceChildren(fragment);
@@ -656,7 +651,7 @@ upd "
                     if (request !== panelRequest) return;
                     rows.replaceChildren();
                     const cell = rows.insertRow().insertCell();
-                    cell.colSpan = 3;
+                    cell.colSpan = 2;
                     cell.textContent = "Could not load dataset updates. " + error.message;
                 }
             }
