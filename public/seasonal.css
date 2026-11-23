@@ -1,0 +1,170 @@
+html[data-theme='seasonal'] {
+  color-scheme: light;
+  --heading: var(--ss-ink);
+  --text-body: var(--ss-ink);
+  --bg-html: var(--ss-page);
+  --bg-body: var(--ss-page);
+  --nav-link: var(--ss-muted);
+  --hint-text: var(--ss-muted);
+  --nav-active-line: var(--ss-accent);
+  --panel-bg: var(--ss-paper);
+  --nav-link-bg: var(--ss-paper);
+  --table-header-bg: var(--ss-wash);
+  --panel-border: var(--ss-edge);
+  --table-border: var(--ss-edge);
+  --tab-hover-bg: var(--ss-wash);
+  --btn-border: var(--ss-edge);
+  --tab-active-border: var(--ss-accent);
+  --tab-active-text: var(--ss-paper);
+  --tab-text: var(--ss-muted);
+  --tab-active-bg: var(--ss-ink);
+  --nav-link-hover: var(--ss-ink);
+  --chart-grid: var(--ss-edge);
+  --logo-accent: var(--ss-accent);
+  --chart-bar: var(--ss-accent);
+  --chart-text: var(--ss-ink);
+}
+html:not([data-theme='seasonal']) :is(.season-strip, .instrument) {
+  display: none;
+}
+html[data-theme='seasonal'] body {
+  background: var(--ss-page);
+}
+html[data-theme='seasonal'] .masthead {
+  min-height: 78px;
+}
+html[data-theme='seasonal'] .site-header {
+  margin-bottom: 24px;
+}
+.season-strip {
+  display: grid;
+  grid-template-columns: minmax(165px, 0.8fr) minmax(0, 1.7fr);
+  background: var(--ss-banner);
+  color: var(--ss-letter);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  margin: 0 0 8px;
+}
+.season-strip > div {
+  align-self: center;
+  padding: 12px clamp(15px, 2.3vw, 38px);
+}
+.season-strip .season-period {
+  font:
+    600 10px/1.4 ui-monospace,
+    monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.season-strip strong {
+  display: block;
+  margin: 3px 0;
+  font:
+    normal clamp(23px, 3vw, 42px) / 1.05 Georgia,
+    serif;
+  letter-spacing: -0.045em;
+}
+.season-strip a {
+  color: inherit;
+  font-size: 11px;
+  text-underline-offset: 3px;
+}
+.season-strip canvas {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  object-position: 50% 59%;
+}
+html[data-theme='seasonal'] .site-nav a[aria-current='page'] {
+  color: var(--ss-ink) !important;
+}
+html[data-theme='seasonal'] :is(.summary-card, .control-panel, .monthly-panel) {
+  border-top: 3px solid var(--ss-accent) !important;
+}
+html[data-theme='seasonal'] :is(.summary-card, .control-panel) {
+  background: linear-gradient(135deg, var(--ss-paper) 52%, var(--ss-wash)) !important;
+}
+html[data-theme='seasonal'] .summary-card {
+  position: relative;
+}
+.summary-card .instrument {
+  display: block;
+  position: absolute;
+  width: clamp(59px, 7vw, 106px);
+  height: auto;
+  right: 12px;
+  bottom: 70px;
+  pointer-events: none;
+}
+html[data-theme='seasonal'] .summary-card:has(.instrument) .comparison,
+html[data-theme='seasonal'] .summary-card:has(.instrument) .normal-label {
+  position: relative;
+  padding-right: 55px;
+}
+html[data-theme='seasonal'] .big-number {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+html[data-theme='seasonal'] .monthly-chart .bar {
+  fill: var(--ss-accent);
+}
+html[data-theme='seasonal'] .js-plotly-plot .bglayer .bg {
+  fill: var(--ss-paper) !important;
+}
+html[data-theme='seasonal'] .js-plotly-plot .main-svg:first-of-type {
+  background: var(--ss-paper) !important;
+}
+html[data-theme='seasonal']
+  .js-plotly-plot
+  :is(.xtick, .ytick, .g-gtitle, .g-xtitle, .g-ytitle, .legendtext)
+  text,
+html[data-theme='seasonal'] .js-plotly-plot text.legendtext {
+  fill: var(--ss-ink) !important;
+}
+html[data-theme='seasonal'] .js-plotly-plot :is(.xgrid, .ygrid) {
+  stroke: var(--ss-edge) !important;
+}
+html[data-theme='seasonal'] .site-footer {
+  border-top: 2px solid var(--ss-edge);
+}
+@media (max-width: 700px) {
+  .season-strip canvas {
+    height: 96px;
+  }
+  .summary-card .instrument {
+    width: 76px;
+  }
+  .season-strip strong {
+    font-size: 24px;
+  }
+}
+@media (min-width: 701px) {
+  .season-strip {
+    grid-template-columns: minmax(200px, 0.85fr) minmax(0, 1.15fr);
+  }
+  .season-strip canvas {
+    height: clamp(124px, 12vw, 170px);
+  }
+}
+html[data-theme='seasonal'] .summary-card {
+  background: linear-gradient(115deg, var(--ss-paper) 45%, var(--ss-wash)) !important;
+}
+.summary-card .instrument {
+  right: 8px;
+  bottom: 95px;
+  max-width: 24%;
+}
+
+.season-strip button {
+  margin-left: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

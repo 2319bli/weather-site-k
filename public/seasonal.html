@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Seasonal · Weather Site K</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: #f6f4ed;
+        color: #222f30;
+        font:
+          15px/1.45 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      button,
+      select,
+      input {
+        font: inherit;
+        color: inherit;
+      }
+      button,
+      select {
+        cursor: pointer;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      select:focus-visible {
+        outline: 3px solid #a34632;
+        outline-offset: 4px;
+      }
+      main,
+      header .inner,
+      footer {
+        max-width: 1216px;
+        margin: auto;
+        padding-left: clamp(18px, 4vw, 64px);
+        padding-right: clamp(18px, 4vw, 64px);
+      }
+      header {
+        border-bottom: 1px solid #cbc9be;
+      }
+      .inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 76px;
+        gap: 12px;
+      }
+      .brand {
+        font:
+          600 19px Georgia,
+          serif;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand svg {
+        width: 40px;
+        height: 40px;
+      }
+      .anchor {
+        color: inherit;
+        text-decoration: none;
+        font-size: 14px;
+        border-bottom: 1px solid #a6a798;
+      }
+      .top {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin: 34px 0 19px;
+      }
+      .top h1,
+      .gallery-head h2 {
+        font:
+          normal clamp(35px, 4vw, 54px) / 1.1 Georgia,
+          serif;
+        letter-spacing: -0.05em;
+        margin: 0;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px;
+      }
+      .controls select,
+      .controls button {
+        padding: 7px 10px;
+        background: transparent;
+        border: 1px solid #bdbeb3;
+        border-radius: 3px;
+        font-size: 13px;
+      }
+      .controls button:hover,
+      .metrics button:hover {
+        background: #e5e3d8;
+      }
+      .spread {
+        border: 1px solid var(--edge);
+        background: var(--paper);
+        color: var(--type);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 42% 58%;
+        background: var(--plate);
+        color: var(--letter);
+        position: relative;
+      }
+      .hero-text {
+        align-self: center;
+        padding: 32px clamp(18px, 3vw, 44px);
+      }
+      .month,
+      .mini-title,
+      .chart-meta {
+        font:
+          600 11px/1.4 ui-monospace,
+          Menlo,
+          monospace;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+      .hero h2 {
+        font:
+          normal clamp(35px, 5.1vw, 76px) / 0.99 Georgia,
+          serif;
+        letter-spacing: -0.058em;
+        margin: 14px 0 20px;
+        text-wrap: balance;
+      }
+      .theme-mark {
+        display: block;
+        width: 100px;
+        height: 10px;
+      }
+      .hero #hero,
+      .tile canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        aspect-ratio: 600/248;
+      }
+      .hero #hero {
+        height: 100%;
+        object-fit: cover;
+        min-height: 205px;
+      }
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-block: 1px solid var(--edge);
+      }
+      .stat {
+        padding: 17px clamp(12px, 2.4vw, 34px);
+      }
+      .stat + .stat {
+        border-left: 1px solid var(--edge);
+      }
+      .stat label {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .stat p {
+        margin: 5px 0 0;
+        font:
+          normal clamp(23px, 3vw, 41px) / 1.1 Georgia,
+          serif;
+        letter-spacing: -0.04em;
+      }
+      .stat small {
+        font-size: 0.53em;
+        letter-spacing: 0;
+      }
+      .graph {
+        padding: 17px clamp(12px, 2.4vw, 34px) 11px;
+      }
+      .graph-heading,
+      .gallery-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .graph h3 {
+        font:
+          normal 20px/1.2 Georgia,
+          serif;
+        margin: 0;
+      }
+      .metrics {
+        display: flex;
+        gap: 3px;
+        flex-wrap: wrap;
+      }
+      .metrics button {
+        border: 1px solid transparent;
+        background: transparent;
+        color: inherit;
+        font-size: 12px;
+        padding: 5px 8px;
+        border-radius: 3px;
+      }
+      .metrics [aria-pressed='true'] {
+        background: var(--type);
+        color: var(--paper);
+      }
+      #chart {
+        width: 100%;
+        height: 110px;
+        display: block;
+        margin-top: 7px;
+      }
+      .gallery-head {
+        margin: 48px 0 18px;
+      }
+      .gallery-head h2 {
+        font-size: 34px;
+      }
+      .gallery-head span {
+        font-size: 13px;
+        color: #58615e;
+      }
+      .month-block {
+        display: grid;
+        grid-template-columns: minmax(98px, 0.52fr) repeat(3, minmax(0, 1fr));
+        gap: clamp(9px, 1.8vw, 25px);
+        border-top: 1px solid #c8c9bc;
+        padding: 19px 0 22px;
+        align-items: start;
+        scroll-margin-top: 14px;
+      }
+      .month-block h3 {
+        margin: 0;
+        font:
+          normal clamp(19px, 2.2vw, 30px) Georgia,
+          serif;
+        letter-spacing: -0.04em;
+      }
+      .tile {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: 0;
+        padding: 0;
+      }
+      .tile canvas {
+        border-radius: 2px;
+      }
+      .tile:hover canvas,
+      .tile[aria-pressed='true'] canvas {
+        outline: 2px solid #304b48;
+        outline-offset: 2px;
+      }
+      .tile strong {
+        display: block;
+        font:
+          normal clamp(17px, 1.75vw, 24px) / 1.1 Georgia,
+          serif;
+        margin: 8px 0 2px;
+        letter-spacing: -0.03em;
+      }
+      .tile small {
+        color: #58615e;
+        font:
+          11px ui-monospace,
+          Menlo,
+          monospace;
+      }
+      .gallery-head a {
+        font-size: 13px;
+      }
+      footer {
+        padding-top: 16px;
+        padding-bottom: 32px;
+        font-size: 12px;
+        border-top: 1px solid #c8c9bc;
+        color: #58615e;
+      }
+      .jump {
+        background: transparent;
+        border: 1px solid #bcbbaf;
+        border-radius: 3px;
+        padding: 6px;
+        font-size: 13px;
+      }
+      .chart-meta {
+        font-size: 10px;
+        margin-bottom: 5px;
+        color: var(--type);
+      }
+      .chart-key {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .scheme {
+        font:
+          italic 14px Georgia,
+          serif;
+        color: #4f605b;
+      }
+      @media (max-width: 720px) {
+        .month-block {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .month-block h3 {
+          grid-column: 1/-1;
+        }
+        .hero-text {
+          padding: 21px 14px;
+        }
+        .hero h2 {
+          font-size: 37px;
+        }
+        .month {
+          font-size: 10px;
+        }
+        .hero #hero {
+          min-height: 170px;
+        }
+        .inner {
+          min-height: 62px;
+        }
+        .top {
+          margin-top: 23px;
+        }
+        .stat {
+          padding: 13px 9px;
+        }
+        .tile small {
+          font-size: 10px;
+        }
+      }
+      @media (max-width: 480px) {
+        .hero {
+          display: flex;
+          flex-direction: column-reverse;
+        }
+        .hero #hero {
+          height: auto;
+          min-height: 0;
+        }
+        .hero-text {
+          padding: 15px 17px;
+        }
+        .hero h2 {
+          font-size: 35px;
+          margin: 6px 0 0;
+        }
+        .theme-mark {
+          display: none;
+        }
+        .inner .scheme {
+          display: none;
+        }
+        .month-block {
+          column-gap: 8px;
+        }
+        .stat p {
+          font-size: 24px;
+        }
+        .gallery-head {
+          margin-top: 32px;
+        }
+        .tile strong {
+          font-size: 16px;
+        }
+        .anchor {
+          font-size: 12px;
+        }
+        .controls {
+          gap: 4px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
+      :root {
+        --accent: #277d83;
+        --wash: #e3eddd;
+        --page: #f5f5ee;
+      }
+      body {
+        background: var(--page);
+        color: var(--type);
+      }
+      header {
+        border-color: var(--edge);
+        background: var(--paper);
+        border-top: 3px solid var(--accent);
+      }
+      .anchor,
+      .scheme,
+      .gallery-head span,
+      .tile small {
+        color: var(--type);
+      }
+      .controls button,
+      .controls select,
+      .jump {
+        border-color: var(--edge);
+        background: var(--paper);
+      }
+      .controls button:hover,
+      .controls select:hover,
+      .jump:hover,
+      .metrics button:hover {
+        background: var(--wash);
+        color: var(--type);
+      }
+      .metrics button[aria-pressed='true'] {
+        background: var(--type);
+        color: var(--paper);
+      }
+      .spread {
+        border-top: 3px solid var(--accent);
+      }
+      .stat {
+        background: linear-gradient(115deg, var(--paper) 20%, var(--wash));
+        position: relative;
+        min-height: 104px;
+      }
+      .stat .instrument {
+        position: absolute;
+        right: 8px;
+        bottom: 6px;
+        width: clamp(62px, 7.7vw, 115px);
+        pointer-events: none;
+      }
+      .stat label,
+      .stat p {
+        position: relative;
+        z-index: 1;
+      }
+      .stat p {
+        padding-right: 40px;
+      }
+      .hero-text {
+        padding-block: 18px;
+      }
+      .site-link {
+        display: inline-block;
+        font:
+          600 13px/1.2 -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        color: var(--letter);
+        text-underline-offset: 4px;
+        margin-top: 13px;
+      }
+      .theme-mark {
+        height: 7px;
+      }
+      .month-block {
+        border-color: var(--edge);
+      }
+      .month-block h3 {
+        color: var(--type);
+      }
+      .tile[aria-pressed='true'] canvas {
+        outline-color: var(--accent);
+      }
+      @media (max-width: 680px) {
+        .stat {
+          min-height: 107px;
+        }
+        .stat .instrument {
+          width: 56px;
+          bottom: 0;
+          right: 0;
+        }
+        .stat p {
+          padding: 0;
+        }
+      }
+      @media (max-width: 480px) {
+        .stat {
+          min-height: 118px;
+        }
+        .stat .instrument {
+          width: 54px;
+        }
+        .site-link {
+          margin-top: 9px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="inner">
+        <div class="brand">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <text
+              x="23"
+              y="35"
+              text-anchor="middle"
+              fill="currentColor"
+              font-family="Georgia, 'Times New Roman', serif"
+              font-size="34"
+              font-style="italic"
+            >
+              K
+            </text>
+            <circle
+              cx="43"
+              cy="6"
+              r="4.3"
+              fill="var(--logo-accent, #1769ff)"
+              stroke="var(--logo-background, #f8fbff)"
+              stroke-width="3"
+            />
+          </svg>
+          Weather Site K
+        </div>
+        <span class="scheme">Seasonal colour theme</span><a class="anchor" href="#gallery">Browse all 36 ↓</a>
+      </div>
+    </header>
+    <main>
+      <div class="top" id="preview">
+        <h1>Seasonal themes</h1>
+        <div class="controls">
+          <button id="prev" aria-label="Previous theme">←</button
+          ><select id="month" aria-label="Preview month"></select
+          ><select id="third" aria-label="Period of month"></select
+          ><button id="next" aria-label="Next theme">→</button><button id="today">Today</button>
+        </div>
+      </div>
+      <section class="spread" aria-label="Weather Site K overview preview">
+        <div class="hero">
+          <div class="hero-text" aria-live="polite">
+            <div class="month" id="period"></div>
+            <h2 id="title"></h2>
+            <canvas class="theme-mark" id="mark" width="200" height="20" aria-hidden="true"></canvas
+            ><a class="site-link" id="site-preview">View on Weather Site K ↗</a>
+          </div>
+          <canvas id="hero" aria-hidden="true"></canvas>
+        </div>
+        <div class="summary">
+          <div class="stat">
+            <label>Mean temperature</label>
+            <p id="t"></p>
+          </div>
+          <div class="stat">
+            <label>Total rainfall</label>
+            <p id="r"></p>
+          </div>
+          <div class="stat">
+            <label>Total sunshine</label>
+            <p id="s"></p>
+          </div>
+        </div>
+        <div class="graph">
+          <div class="graph-heading">
+            <div>
+              <div class="chart-meta">2025 overview · archive data</div>
+              <h3>Month by month</h3>
+            </div>
+            <div class="metrics">
+              <button data-m="0">Temperature</button><button data-m="1">Rainfall</button
+              ><button data-m="2">Sunshine</button>
+            </div>
+          </div>
+          <canvas id="chart"></canvas>
+        </div>
+      </section>
+      <section id="gallery" aria-labelledby="galleryTitle">
+        <div class="gallery-head">
+          <h2 id="galleryTitle">The seasonal calendar</h2>
+          <select id="jump" class="jump" aria-label="Jump to month">
+            <option value="">Jump to month…</option>
+          </select>
+        </div>
+        <div id="calendar"></div>
+      </section>
+    </main>
+    <footer>Weather Site K · Seasonal themes</footer>
+    <script type="module" src="seasonal-gallery.mjs"></script>
+  </body>
+</html>

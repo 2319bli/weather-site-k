@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en" data-seasonal><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Overview | Weather Site K</title>
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="site.css?v=overview-1"><link rel="stylesheet" href="theme.css?v=design-1">
-<link rel="stylesheet" href="dashboard.css?v=2"><script src="appearance.js?v=indices-1"></script>
+<link rel="stylesheet" href="dashboard.css?v=2"><link rel="stylesheet" href="seasonal.css"><script src="appearance.js?v=seasonal-1"></script>
 <script type="module" src="dashboard.mjs?v=2"></script>
 </head><body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -17,6 +17,7 @@
         <label class="scheme-picker" for="theme-toggle">
             <span>Colour scheme</span>
             <select id="theme-toggle" class="theme-toggle">
+              <option value="seasonal">Seasonal</option>
               <option value="kimi-1">Daybreak</option>
               <option value="kimi-2">Midnight</option>
               <option value="kimi-3">Terracotta</option>

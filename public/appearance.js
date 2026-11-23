@@ -1,18 +1,62 @@
 /* Presentation only: retain saved theme IDs and leave chart/data code alone. */
 (() => {
   const themes = ['kimi-1', 'kimi-2', 'kimi-3', 'codex-1', 'codex-2', 'codex-3', 'claude-1', 'claude-2', 'claude-3'];
-  let theme = 'codex-2';
+  const seasonal = document.documentElement.hasAttribute('data-seasonal');
+  if (seasonal) themes.push('seasonal');
+  const validPeriod = value => /^(?:[1-9]|[12]\d|3[0-6])$/.test(value);
+  let theme = seasonal ? 'seasonal' : 'codex-2';
+  let period = null;
+  const url = new URL(location.href);
+  const requested = seasonal ? url.searchParams.get('season') : null;
   try {
     const saved = localStorage.getItem('weather-site-theme');
     if (themes.includes(saved)) theme = saved;
-  } catch { /* The selected theme still works without browser storage. */ }
+    const sample = sessionStorage.getItem('weather-season-preview');
+    if (seasonal && validPeriod(sample)) { period = sample; theme = 'seasonal'; }
+  } catch { /* The picker also works without browser storage. */ }
+
+  function saveChoice() {
+    try {
+      if (seasonal) {
+        if (period === null) sessionStorage.removeItem('weather-season-preview');
+        else sessionStorage.setItem('weather-season-preview', period);
+      }
+      if (period === null) localStorage.setItem('weather-site-theme', theme);
+    } catch { /* Use the selection for the current page. */ }
+  }
+  if (validPeriod(requested) || requested === 'auto') {
+    theme = 'seasonal';
+    period = validPeriod(requested) ? requested : null;
+    saveChoice();
+    url.searchParams.delete('season');
+    history.replaceState(history.state, '', url);
+  }
   document.documentElement.dataset.theme = theme;
   document.addEventListener('DOMContentLoaded', () => {
     const select = document.getElementById('theme-toggle');
+    if (!select) return;
     select.value = theme;
+    let seasonalView;
+    function applyTheme() {
+      document.documentElement.dataset.theme = theme;
+      if (theme === 'seasonal' && !seasonalView) {
+        seasonalView = import('./seasonal-site.mjs').then(({ startSeasonal }) =>
+          startSeasonal(() => period, () => {
+            period = null;
+            saveChoice();
+            applyTheme();
+          })
+        );
+      } else if (seasonalView) {
+        seasonalView.then(render => render());
+      }
+    }
+    applyTheme();
     select.addEventListener('change', () => {
-      document.documentElement.dataset.theme = select.value;
-      try { localStorage.setItem('weather-site-theme', select.value); } catch { /* Current visit only. */ }
+      theme = select.value;
+      period = null;
+      saveChoice();
+      applyTheme();
     });
     // Keep the existing series colours while making each year label readable.
     const contrastYearLabels = list => list.querySelectorAll('li').forEach(item => {
