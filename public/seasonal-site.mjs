@@ -1,4 +1,5 @@
-import { plates, spotColours, drawPlate, cardPrint } from './seasonal-art.mjs';
+import { drawLandscape } from './seasonal-landscape.mjs';
+import { plates, spotColours, cardPrint } from './seasonal-art.mjs';
 
 const london = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Europe/London',
@@ -7,7 +8,6 @@ const london = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
 });
 const monthName = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', month: 'long' });
-const darkBanners = new Set([2, 4, 11, 15, 19, 22, 24, 29, 31, 34, 35]);
 
 export function seasonalDate(date = new Date()) {
   const parts = Object.fromEntries(
@@ -43,10 +43,13 @@ export function startSeasonal(preview, returnToCalendar) {
   strip.className = 'season-strip';
   strip.setAttribute('aria-label', 'Seasonal theme');
   strip.innerHTML =
-    '<div><span class="season-period"></span><strong></strong><a>Browse themes ↗</a><button type="button">Use current season</button></div><canvas aria-hidden="true"></canvas>';
+    '<a aria-label="Browse seasonal calendar"></a><button type="button">Use current season</button>';
   document.querySelector('.site-nav').before(strip);
   strip.querySelector('button').onclick = returnToCalendar;
-  const scene = strip.querySelector('canvas');
+  const scene = document.createElement('canvas');
+  scene.className = 'season-landscape';
+  scene.setAttribute('aria-hidden', 'true');
+  document.body.prepend(scene);
   const prints = Array.from(document.querySelectorAll('.summary-grid .summary-card'), (card) => {
     const canvas = document.createElement('canvas');
     canvas.className = 'instrument';
@@ -54,12 +57,12 @@ export function startSeasonal(preview, returnToCalendar) {
     card.append(canvas);
     return canvas;
   });
-  let lastIndex, lastWidth, timer;
+  let lastIndex, lastSize, timer;
   function resize() {
-    const width = scene.clientWidth;
-    if (width && width !== lastWidth && lastIndex !== undefined) {
-      lastWidth = width;
-      drawPlate(scene, lastIndex);
+    const size = scene.clientWidth + 'x' + scene.clientHeight;
+    if (scene.clientWidth && size !== lastSize && lastIndex !== undefined) {
+      lastSize = size;
+      drawLandscape(scene, lastIndex);
     }
   }
   function render() {
@@ -71,10 +74,9 @@ export function startSeasonal(preview, returnToCalendar) {
     strip.querySelector('button').hidden = selected === null;
     if (index !== lastIndex) {
       lastIndex = index;
-      lastWidth = 0;
-      const [name, colours] = plates[index];
+      lastSize = null;
+      const colours = plates[index];
       const [sky, light, far, mid, ink] = colours.split(' ');
-      const dark = darkBanners.has(index);
       const palette = {
         page: mix(sky, 'fff9ed', 0.84),
         paper: mix(light, 'ffffff', 0.85),
@@ -83,20 +85,19 @@ export function startSeasonal(preview, returnToCalendar) {
         ink: mix(ink, '102020', 0.18),
         muted: mix(ink, '53605c', 0.28),
         accent: '#' + spotColours[index],
-        banner: dark ? '#' + ink : mix(sky, 'fff8e7', 0.27),
-        letter: dark ? '#fff9e8' : '#' + ink,
       };
       for (const [key, value] of Object.entries(palette)) root.style.setProperty('--ss-' + key, value);
-      strip.querySelector('strong').textContent = name;
       strip.querySelector('a').href = 'seasonal.html#theme-' + (index + 1);
       prints.forEach((canvas, metric) => cardPrint(canvas, metric, index));
     }
-    strip.querySelector('span').textContent = seasonalRange(index, year);
+    const range = seasonalRange(index, year);
+    strip.querySelector('a').textContent = range;
+    strip.querySelector('a').setAttribute('aria-label', range + ' · Browse seasonal calendar');
     resize();
     // UK midnight always falls on a UTC hour, including during British Summer Time.
     timer = setTimeout(render, 3600000 - (Date.now() % 3600000) + 50);
   }
-  new ResizeObserver(resize).observe(strip);
+  new ResizeObserver(resize).observe(scene);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) render();
   });

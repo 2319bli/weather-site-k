@@ -1,4 +1,5 @@
-import { plates, spotColours, drawPlate, cardPrint } from './seasonal-art.mjs';
+import { drawLandscape } from './seasonal-landscape.mjs';
+import { plates, spotColours, cardPrint } from './seasonal-art.mjs';
 import { seasonalDate, seasonalRange } from './seasonal-site.mjs';
 const archive = {
   series: [
@@ -44,7 +45,7 @@ function chart() {
   canvas.height = h * d;
   const c = canvas.getContext('2d');
   c.scale(d, d);
-  const [, highlight, , middle, ink] = plates[active][1].split(' '),
+  const [, highlight, , middle, ink] = plates[active].split(' '),
     values = archive.series[metric],
     max = Math.ceil(Math.max(...values) / (metric === 0 ? 5 : 50)) * (metric === 0 ? 5 : 50);
   const x = (i) => 36 + ((i + 0.5) * (w - 42)) / 12,
@@ -110,37 +111,13 @@ function chart() {
   );
   document.querySelectorAll('[data-m]').forEach((b, i) => b.setAttribute('aria-pressed', i === metric));
 }
-function paintMark(i, col) {
-  const c = $('mark').getContext('2d');
-  c.clearRect(0, 0, 200, 20);
-  c.fillStyle = col;
-  c.strokeStyle = col;
-  c.lineWidth = 2;
-  const count = 5 + (i % 6);
-  for (let n = 0; n < count; n++) {
-    const x = 3 + n * 16;
-    c.beginPath();
-    if ([0, 2, 4, 6, 10, 17, 18, 19, 21, 25, 26, 33].includes(i)) {
-      c.moveTo(x, 15);
-      c.lineTo(x + 10, 4);
-      c.stroke();
-    } else if ([3, 5, 9, 11, 13, 16, 20, 23, 27, 28].includes(i)) {
-      c.ellipse(x + 5, 10, 6, 3, -0.6, 0, 6.283);
-      c.fill();
-    } else {
-      c.moveTo(x, 12);
-      c.quadraticCurveTo(x + 5, 3, x + 13, 10);
-      c.stroke();
-    }
-  }
-}
 function select(i, store = true) {
   active = (i + 36) % 36;
   const m = Math.floor(active / 3);
   $('month').value = m;
   $('third').replaceChildren(...[0, 1, 2].map((k) => new Option(label(m * 3 + k), k)));
   $('third').value = active % 3;
-  const [name, cols] = plates[active],
+  const cols = plates[active],
     [sky, highlight, far, mid, ink] = cols.split(' ');
   const dark = [2, 4, 11, 15, 19, 22, 24, 29, 31, 34, 35].includes(active);
   $('site-preview').href = 'index.html?season=' + (active === current ? 'auto' : active + 1);
@@ -155,10 +132,8 @@ function select(i, store = true) {
     plate: dark ? hex(ink) : mix(sky, 'fffaf0', 0.43),
     letter: dark ? '#fff8e9' : mix(ink, '172526', 0.35),
   }).forEach(([k, v]) => root.style.setProperty('--' + k, v));
-  $('title').textContent = name;
-  $('period').textContent = label(active) + ' ' + monthNames[m];
-  drawPlate($('hero'), active);
-  paintMark(active, dark ? hex(highlight) : hex(ink));
+  $('title').textContent = seasonalRange(active, year);
+  drawLandscape($('landscape'), active);
   document.querySelectorAll('.stat .instrument').forEach((canvas, i) => cardPrint(canvas, i, active));
   tiles.forEach((b, j) => b.setAttribute('aria-pressed', active === j));
   chart();
@@ -178,9 +153,8 @@ for (let m = 0; m < 12; m++) {
       b = document.createElement('button');
     tiles[i] = b;
     b.className = 'tile';
-    b.innerHTML = '<canvas aria-hidden="true"></canvas><strong></strong><small></small>';
-    b.querySelector('strong').textContent = plates[i][0];
-    b.querySelector('small').textContent = label(i) + ' ' + monthNames[m];
+    b.innerHTML = '<canvas aria-hidden="true"></canvas><strong></strong>';
+    b.querySelector('strong').textContent = seasonalRange(i, year);
     b.addEventListener('click', () => {
       select(i);
       $('preview').scrollIntoView();
@@ -191,7 +165,7 @@ for (let m = 0; m < 12; m++) {
   $('calendar').append(block);
 }
 tiles.forEach((b, i) => {
-  if (b.isConnected) drawPlate(b.querySelector('canvas'), i);
+  if (b.isConnected) drawLandscape(b.querySelector('canvas'), i);
 });
 $('jump').onchange = (e) => {
   if (e.target.value !== '') $('month-' + e.target.value).scrollIntoView();
@@ -230,6 +204,6 @@ window.addEventListener('hashchange', () => {
   if (location.hash.startsWith('#theme-')) select(fromHash(), false);
 });
 new ResizeObserver(() => {
-  drawPlate($('hero'), active);
+  drawLandscape($('landscape'), active);
   chart();
-}).observe($('hero'));
+}).observe($('landscape'));

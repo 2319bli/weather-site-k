@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 test('Seasonal switches on the 1st, 11th and 21st in UK time, including leap years', async () => {
   const { seasonalDate, seasonalRange } = await import('../public/seasonal-site.mjs');
   const { plates, spotColours } = await import('../public/seasonal-art.mjs');
-  assert.equal(new Set(plates.map(([name]) => name)).size, 36);
+  assert.equal(new Set(plates).size, 36);
   assert.equal(spotColours.length, 36);
   for (const [date, period] of [
     ['2026-06-10T22:59:59Z', 15], ['2026-06-10T23:00:00Z', 16],
