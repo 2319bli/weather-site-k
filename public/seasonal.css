@@ -61,9 +61,6 @@ html[data-theme='seasonal'] .site-nav {
   border-top: 0 !important;
   border-bottom-color: color-mix(in srgb, var(--ss-ink) 22%, transparent) !important;
 }
-html[data-theme='seasonal'] :is(.site-footer, .overview-heading, .page-heading) {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--ss-page) 87%, transparent), transparent);
-}
 html[data-theme='seasonal'] .site-nav a[aria-current='page'] {
   color: var(--ss-ink) !important;
 }
@@ -114,7 +111,7 @@ html[data-theme='seasonal'] .js-plotly-plot :is(.xgrid, .ygrid) {
   stroke: var(--ss-edge) !important;
 }
 html[data-theme='seasonal'] .site-footer {
-  border-top: 2px solid var(--ss-edge);
+  border-top: 0;
 }
 @media (max-width: 700px) {
   .summary-card .instrument {
