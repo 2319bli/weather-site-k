@@ -24,7 +24,7 @@ html[data-theme='seasonal'] {
   --chart-bar: var(--ss-accent);
   --chart-text: var(--ss-ink);
 }
-html:not([data-theme='seasonal']) :is(.season-strip, .instrument, .season-landscape) {
+html:not([data-theme='seasonal']) :is(.instrument, .season-landscape) {
   display: none;
 }
 html[data-theme='seasonal'] .masthead {
@@ -58,34 +58,11 @@ html[data-theme='seasonal'] .season-landscape {
   z-index: -2;
 }
 html[data-theme='seasonal'] .site-nav {
-  background: color-mix(in srgb, var(--ss-paper) 88%, transparent) !important;
+  border-top: 0 !important;
+  border-bottom-color: color-mix(in srgb, var(--ss-ink) 22%, transparent) !important;
 }
 html[data-theme='seasonal'] :is(.site-footer, .overview-heading, .page-heading) {
   background: linear-gradient(90deg, color-mix(in srgb, var(--ss-page) 87%, transparent), transparent);
-}
-.season-strip {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  min-height: 26px;
-  margin: 0 0 5px;
-}
-.season-strip a,
-.season-strip button {
-  background: var(--ss-paper);
-  color: var(--ss-ink);
-  border: 1px solid var(--ss-edge);
-  border-radius: 3px;
-  font:
-    500 11px/1.25 system-ui,
-    sans-serif;
-  text-decoration: none;
-  padding: 4px 8px;
-}
-.season-strip a:hover,
-.season-strip button:hover {
-  text-decoration: underline;
 }
 html[data-theme='seasonal'] .site-nav a[aria-current='page'] {
   color: var(--ss-ink) !important;

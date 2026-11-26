@@ -3,34 +3,11 @@
   const themes = ['kimi-1', 'kimi-2', 'kimi-3', 'codex-1', 'codex-2', 'codex-3', 'claude-1', 'claude-2', 'claude-3'];
   const seasonal = document.documentElement.hasAttribute('data-seasonal');
   if (seasonal) themes.push('seasonal');
-  const validPeriod = value => /^(?:[1-9]|[12]\d|3[0-6])$/.test(value);
   let theme = seasonal ? 'seasonal' : 'codex-2';
-  let period = null;
-  const url = new URL(location.href);
-  const requested = seasonal ? url.searchParams.get('season') : null;
   try {
     const saved = localStorage.getItem('weather-site-theme');
     if (themes.includes(saved)) theme = saved;
-    const sample = sessionStorage.getItem('weather-season-preview');
-    if (seasonal && validPeriod(sample)) { period = sample; theme = 'seasonal'; }
   } catch { /* The picker also works without browser storage. */ }
-
-  function saveChoice() {
-    try {
-      if (seasonal) {
-        if (period === null) sessionStorage.removeItem('weather-season-preview');
-        else sessionStorage.setItem('weather-season-preview', period);
-      }
-      if (period === null) localStorage.setItem('weather-site-theme', theme);
-    } catch { /* Use the selection for the current page. */ }
-  }
-  if (validPeriod(requested) || requested === 'auto') {
-    theme = 'seasonal';
-    period = validPeriod(requested) ? requested : null;
-    saveChoice();
-    url.searchParams.delete('season');
-    history.replaceState(history.state, '', url);
-  }
   document.documentElement.dataset.theme = theme;
   document.addEventListener('DOMContentLoaded', () => {
     const select = document.getElementById('theme-toggle');
@@ -40,13 +17,7 @@
     function applyTheme() {
       document.documentElement.dataset.theme = theme;
       if (theme === 'seasonal' && !seasonalView) {
-        seasonalView = import('./seasonal-site.mjs').then(({ startSeasonal }) =>
-          startSeasonal(() => period, () => {
-            period = null;
-            saveChoice();
-            applyTheme();
-          })
-        );
+        seasonalView = import('./seasonal-site.mjs?v=auto').then(({ startSeasonal }) => startSeasonal());
       } else if (seasonalView) {
         seasonalView.then(render => render());
       }
@@ -54,8 +25,7 @@
     applyTheme();
     select.addEventListener('change', () => {
       theme = select.value;
-      period = null;
-      saveChoice();
+      try { localStorage.setItem('weather-site-theme', theme); } catch { /* Current page only. */ }
       applyTheme();
     });
     // Keep the existing series colours while making each year label readable.
