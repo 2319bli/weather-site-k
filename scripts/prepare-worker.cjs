@@ -1,12 +1,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
+const { MONTHLY_DATASETS, monthlyDataset, parseMonthlyArchive } = require('../public/sunshine-data.mjs');
 const output = path.join(root, '.worker-assets');
 fs.mkdirSync(path.join(output, 'data'), { recursive: true });
 for (const file of [...require('../worker/ui-assets.json'),
   'data/MeanTempCET.csv', 'data/PrecipitationEWP.csv', 'data/forecast_2026.csv',
   'data/hottest_days.csv', 'data/coldest_days.csv',
-  ...['UK', 'England', 'England_and_Wales', 'Midlands'].map(region => `data/sunshine/${region}.txt`)]) {
+  ...Object.keys(MONTHLY_DATASETS).map(key => 'data/' + monthlyDataset(key).archive)]) {
   fs.mkdirSync(path.dirname(path.join(output, file)), { recursive: true });
   fs.copyFileSync(path.join(root, 'public', file), path.join(output, file));
 }
@@ -22,14 +23,13 @@ for (const [key, file] of Object.entries({ cet: 'MeanTempCET.csv', ewp: 'Precipi
   latest[key] = dates.sort().at(-1);
 }
 const { EXTREME_FILES, parseExtremeCsv } = require('../public/extremes.mjs');
-const { SUNSHINE, parseSunshine } = require('../public/sunshine-data.mjs');
 const archive = file => fs.readFileSync(path.join(output, 'data', file), 'utf8');
 latest.for = archive('forecast_2026.csv').trim().split(/\r?\n/).map(line => line.split(',')[0]).sort().at(-1);
 for (const [key, file] of Object.entries(EXTREME_FILES)) {
   latest[key] = parseExtremeCsv(archive(file)).map(record => record.iso).sort().at(-1);
 }
-for (const [key, region] of Object.entries(SUNSHINE)) {
-  latest[key] = parseSunshine(archive('sunshine/' + region.file)).records.at(-1).month;
+for (const key of Object.keys(MONTHLY_DATASETS)) {
+  latest[key] = parseMonthlyArchive(archive(monthlyDataset(key).archive)).records.at(-1).month;
 }
 fs.writeFileSync(path.join(root, 'worker/baseline.json'), JSON.stringify(latest, null, 2) + '\n');
 console.log('Worker assets prepared; historical CSV bytes preserved.');

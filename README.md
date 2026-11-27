@@ -30,6 +30,12 @@ The rainfall page offers **Cumulative total**, **Daily rainfall** and **Historic
 
 Both pages share calendar and view helpers (retaining their original `temperature-*.js` filenames for existing pages). Rainfall uses totals in mm; temperature uses means in °C. The server data, mixed date parser, leap-day alignment and winter-year convention are retained.
 
+### Regional frost and rain days
+
+On Temperature and Rainfall, choose **Months**, **Seasons** or **Hex Seasons**, then **Historical comparison** to select a regional day count. The Met Office series cover air frost in the Midlands and UK from 1931, and days with at least 1 mm of rain in England and Wales and the UK from 1891. Values are regional averages in days. Complete seasons use published totals where available. Hex-seasons and periods completed by terminal updates sum monthly values. [Met Office regional series](https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-and-regional-series)
+
+The terminal accepts `dat CODE` and `conf CODE "YYYY-MM days"`. Use `midair` or `ukair` for air frost, and `ewrd1` or `ukrd1` for rain days. The short forms `air` and `rd1` default to Midlands and England and Wales respectively. Each region has its own consecutive monthly record. Refresh the chart page to see new confirmations.
+
 ### Individual totals
 
 On temperature, rainfall and sunshine, the Months, Seasons and Hex seasons tabs also offer **Individual totals** with an Add year dropdown and removable year labels, supporting up to ten years. Months shows all 12 months, Seasons all four seasons, and Hex seasons all six two-month periods. Selected years and their colours are retained when changing breakdown types. The last remaining year cannot be removed; add a replacement first. Sunshine retains its regional dataset dropdown.

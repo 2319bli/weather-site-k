@@ -481,6 +481,10 @@ dat suneaw
 dat sunmid
 conf sunuk "2026-10 86.3"
 Sunshine: sunuk (UK), suneng (England), suneaw (England and Wales), sunmid (Midlands).
+Air frost days: midair (Midlands, also air), ukair (UK).
+Rain days ≥1 mm: ewrd1 (England and Wales, also rd1), ukrd1 (UK).
+conf ukair "2026-11 4.2"
+conf ukrd1 "2026-11 12.5"
 Use YYYY-MM and hours; conf saves the next month immediately.
 view hei 2026
 upd hei "
@@ -566,6 +570,10 @@ dat suneaw
 dat sunmid
 conf sunuk "2026-10 86.3"
 Sunshine: sunuk (UK), suneng (England), suneaw (England and Wales), sunmid (Midlands).
+Air frost days: midair (Midlands, also air), ukair (UK).
+Rain days ≥1 mm: ewrd1 (England and Wales, also rd1), ukrd1 (UK).
+conf ukair "2026-11 4.2"
+conf ukrd1 "2026-11 12.5"
 Use YYYY-MM and hours; conf saves the next month immediately.
 view hei 2026
 upd hei "
@@ -655,7 +663,9 @@ upd "
                 cet: "Central England temperature (CET)", ewp: "England and Wales precipitation (EWP)",
                 for: "CET forecast", hei: "Heat index (HEI)", fei: "Freeze index (FEI)",
                 sunuk: "Sunshine · UK", suneng: "Sunshine · England",
-                suneaw: "Sunshine · England and Wales", sunmid: "Sunshine · Midlands"
+                suneaw: "Sunshine · England and Wales", sunmid: "Sunshine · Midlands",
+                midair: "Air frost days · Midlands", ukair: "Air frost days · UK",
+                ewrd1: "Rain days ≥1 mm · England and Wales", ukrd1: "Rain days ≥1 mm · UK"
             };
             let panelRequest = 0;
             async function refreshDatasetPanel() {
@@ -1241,24 +1251,25 @@ upd "
                 }
             }
 
-            async function handleSunshineCommand(command) {
-                if (!/^(dat|conf)\s+sun\w*\b/i.test(command)) return null;
-                const { parseSunshineCommand, appendSunshine, SUNSHINE } = await import('./sunshine-data.mjs');
+            async function handleMonthlyCommand(command) {
+                if (!/^(dat|conf)\s+(?:sun\w*|air|rd1|midair|ukair|ewrd1|ukrd1)\b/i.test(command)) return null;
+                const { parseMonthlyCommand, appendMonthly, monthlyDataset } = await import('./sunshine-data.mjs');
                 try {
-                    const parsed = parseSunshineCommand(command);
+                    const parsed = parseMonthlyCommand(command);
                     if (!parsed) return 'Use sunuk, suneng, suneaw or sunmid for sunshine.';
                     const data = await requestJson(`/data/${parsed.dataset}.json`);
-                    const label = `${SUNSHINE[parsed.dataset].label} sunshine`;
+                    const { label: region, metric, unit } = monthlyDataset(parsed.dataset);
+                    const label = `${region} ${metric}`;
                     if (parsed.action === 'dat') {
                         const row = data.records.at(-1);
-                        return `${label}: ${row.month} ${row.value.toFixed(1)} hours`;
+                        return `${label}: ${row.month} ${row.value.toFixed(1)} ${unit}`;
                     }
-                    appendSunshine(data.records, parsed.updates);
-                    const result = await requestJson('/api/sunshine/update', {
+                    appendMonthly(data.records, parsed.updates, unit);
+                    const result = await requestJson('/api/monthly/update', {
                         method: 'POST', body: { dataset: parsed.dataset, version: data.version, updates: parsed.updates }
                     });
-                    return `${label} updated: ${result.updated} month${result.updated === 1 ? '' : 's'}. Latest: ${result.latest.month} ${result.latest.value.toFixed(1)} hours.`;
-                } catch (error) { return `Sunshine update: ${error.message}`; }
+                    return `${label} updated: ${result.updated} month${result.updated === 1 ? '' : 's'}. Latest: ${result.latest.month} ${result.latest.value.toFixed(1)} ${unit}.`;
+                } catch (error) { return `Monthly update: ${error.message}`; }
             }
 
             async function handleExtremeCommand(command) {
@@ -1349,8 +1360,8 @@ upd "
                 if (deleteVisualResponse !== null) return deleteVisualResponse;
                 const extremeResponse = await handleExtremeCommand(command);
                 if (extremeResponse !== null) return extremeResponse;
-                const sunshineResponse = await handleSunshineCommand(command);
-                if (sunshineResponse !== null) return sunshineResponse;
+                const monthlyResponse = await handleMonthlyCommand(command);
+                if (monthlyResponse !== null) return monthlyResponse;
 
                 if (/^run\b/i.test(command)) await ensureData();
                 const runVisualResponse = handleRunVisual(command);

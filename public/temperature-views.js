@@ -31,6 +31,16 @@
             const extra = document.getElementById(`${kind}-details`);
             const forecastSummary = document.getElementById('forecast-summary');
             const mobile = window.matchMedia('(max-width: 760px)');
+            const datasetSelect = document.getElementById('chart-dataset');
+            const baseDataset = rainfall ? 'ewp' : 'cet';
+            const heading = document.getElementById('page-title');
+            const defaultHeading = heading.textContent;
+            let preferredDataset = baseDataset;
+            let renderVersion = 0;
+            datasetSelect.addEventListener('change', () => {
+                preferredDataset = datasetSelect.value;
+                redraw();
+            });
             let currentView = 'annual';
 
             buttons.forEach(button => button.addEventListener('click', () => {
@@ -66,7 +76,7 @@
                     hovermode: 'closest', barmode: modes[currentView] === 'individual' ? 'group' : 'overlay',
                     ...(modes[currentView] === 'individual' ? { showlegend: true } : {})
                 }, { responsive: true, displaylogo: false, toImageButtonOptions: {
-                    filename: `${rainfall ? 'ewp' : 'cet'}-${currentView}-${modes[currentView]}`, width: 1400, height: 800, scale: 2
+                    filename: `${datasetSelect.value}-${currentView}-${modes[currentView]}`, width: 1400, height: 800, scale: 2
                 } });
             }
 
@@ -249,8 +259,19 @@
 
             return {
                 render(view, selection, years) {
+                    const version = ++renderVersion;
                     currentView = view;
                     const mode = modes[view] || 'cumulative';
+                    const regionalAvailable = view !== 'annual' && mode === 'historical';
+                    for (const option of datasetSelect.options) {
+                        option.hidden = option.disabled = option.value !== baseDataset && !regionalAvailable;
+                    }
+                    datasetSelect.value = regionalAvailable ? preferredDataset : baseDataset;
+                    const dataset = datasetSelect.value;
+                    const regional = dataset !== baseDataset;
+                    heading.textContent = regional ? datasetSelect.selectedOptions[0].textContent : defaultHeading;
+                    let range = historyRanges[view] || 'full';
+                    if (regional && range === 'ytd') range = 'months';
                     document.body.dataset[`${kind}Mode`] = mode;
                     buttons.forEach(button => {
                         button.setAttribute('aria-pressed', String(button.dataset.chartMode === mode));
@@ -260,7 +281,8 @@
                     if (individualControls) individualControls.hidden = mode !== 'individual';
                     if (historyControls) historyControls.hidden = mode !== 'historical';
                     rangeButtons.forEach(button => {
-                        button.setAttribute('aria-pressed', String(button.dataset.historyRange === (historyRanges[view] || 'full')));
+                        button.hidden = regional && button.dataset.historyRange === 'ytd';
+                        button.setAttribute('aria-pressed', String(button.dataset.historyRange === range));
                         if (button.dataset.historyRange !== 'full') {
                             const label = view === 'annual' ? 'Year to date' : 'Period to date';
                             button.textContent = button.dataset.historyRange === 'months' ? label + ' (complete months)' : label;
@@ -268,6 +290,22 @@
                     });
                     extra.replaceChildren();
                     if (mode === 'cumulative') return false;
+                    if (regional) {
+                        if (forecastSummary) forecastSummary.textContent = '';
+                        historyNote.textContent = '';
+                        Plotly.purge(chart);
+                        summary.textContent = 'Loading regional observations…';
+                        import('./regional-history.mjs').then(async module => {
+                            const result = await module.loadRegionalData(dataset);
+                            if (version === renderVersion) module.renderRegionalHistory({
+                                ...result, dataset, view, selection, toDate: range === 'months', plot, table,
+                                extra, summary, note: historyNote
+                            });
+                        }).catch(() => {
+                            if (version === renderVersion) summary.textContent = 'Could not load the regional data. Refresh to try again.';
+                        });
+                        return true;
+                    }
                     archive ??= A.createArchive(observedRows, window.earlyMonthlyObservations);
                     if (forecastSummary) forecastSummary.textContent = '';
                     if (mode === 'individual') { renderIndividual(); return true; }

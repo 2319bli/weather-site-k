@@ -251,12 +251,12 @@ body {
     <link rel="stylesheet" href="theme.css?v=design-1">
     <link rel="stylesheet" href="seasonal.css?v=3"><script src="appearance.js?v=seasonal-2"></script>
     <link rel="icon" href="logo.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="temperature.css?v=views-6">
+    <link rel="stylesheet" href="temperature.css?v=regional-1">
     <script src="data/cet-early.js"></script>
     <script src="cet-outlook.js?v=outlook-3"></script>
     <script src="temperature-data.js?v=outlook-1"></script>
     <script src="individual-comparison.js?v=monthly-1"></script>
-    <script src="temperature-views.js?v=years-27"></script>
+    <script src="temperature-views.js?v=regional-1"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -297,7 +297,13 @@ body {
     <div>
         <h1 id="page-title">Central England temperature</h1>
     </div>
-    <span class="dataset-tag">CET · °C</span>
+    <label class="chart-dataset" for="chart-dataset">Dataset
+        <select id="chart-dataset">
+            <option value="cet">CET</option>
+            <option value="midair" hidden disabled>Air frost days · Midlands</option>
+            <option value="ukair" hidden disabled>Air frost days · UK</option>
+        </select>
+    </label>
 </section>
     <div class="tabs">
         <button class="tab active" data-tab="annual">Annual</button>

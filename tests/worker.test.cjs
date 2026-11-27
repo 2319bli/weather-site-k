@@ -58,7 +58,7 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     const get = url => mf.dispatchFetch(origin + url, { headers: { Cookie: session }, redirect: 'manual' });
     const post = (url, body, extra = {}) => mf.dispatchFetch(origin + url, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: session, ...extra }, body: JSON.stringify(body), redirect: 'manual' });
     for (const route of ['/terminal', '/terminal.html', '/']) assert.equal((await get(route)).status, 303);
-    for (const route of ['/api/observed/update', '/api/forecast/update', '/api/extremes/update', '/api/sunshine/update', '/api/terminal/save', '/api/presets']) assert.equal((await post(route, {})).status, 401);
+    for (const route of ['/api/observed/update', '/api/forecast/update', '/api/extremes/update', '/api/sunshine/update', '/api/monthly/update', '/api/terminal/save', '/api/presets']) assert.equal((await post(route, {})).status, 401);
     assert.equal((await get('/api/terminal/saved?terminal=0')).status, 401);
     assert.equal((await get('/api/terminal/datasets')).status, 401);
     assert.equal((await post('/api/login', { password: 'integration-test-only' }, { Origin: 'https://evil.test' })).status, 403);
@@ -84,7 +84,7 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     const status = async () => Object.fromEntries((await (await get('/api/terminal/datasets')).json()).map(row => [row.dataset, row]));
     const initial = await status();
     const baseline = require('../worker/baseline.json');
-    assert.equal(Object.keys(initial).length, 9);
+    assert.equal(Object.keys(initial).length, 13);
     for (const [key, date] of Object.entries(baseline)) {
       assert.deepEqual(initial[key], { dataset: key, latestDate: date, updatedAt: null });
     }
@@ -139,7 +139,7 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     assert.equal((await post('/api/sunshine/update',{dataset:'sunuk',updates:[]})).status,400);
     // Exercise the actual terminal handler against the isolated Worker database.
     const terminalSource = fs.readFileSync(path.join(root,'worker/terminal.html'),'utf8');
-    const handlerSource = terminalSource.slice(terminalSource.indexOf('async function handleSunshineCommand'),terminalSource.indexOf('async function handleExtremeCommand')).trim().replace("await import('./sunshine-data.mjs')",'sunshineModule');
+    const handlerSource = terminalSource.slice(terminalSource.indexOf('async function handleMonthlyCommand'),terminalSource.indexOf('async function handleExtremeCommand')).trim().replace("await import('./sunshine-data.mjs')",'sunshineModule');
     const requestJson = async (url, options) => {
       const response = options?.method === 'POST' ? await post(url,options.body) : await get(url);
       const body = await response.json();
@@ -152,6 +152,16 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     assert.match(await handler('conf sunuk "2026-11 42.1"'),/Expected 2026-12/);
     assert.match(await handler('dat suneng'),/2026-10 86.3 hours/);
     assert.match(await handler('conf sunmid "2026-13 9"'),/valid month/);
+    for (const [alias, dataset] of [['air','midair'], ['air ukair','ukair'], ['rd1','ewrd1'], ['ukrd1','ukrd1']]) {
+      const original = await (await get(`/data/${dataset}.json`)).json();
+      assert.equal(original.unit, 'days');
+      assert.equal(original.records.at(-1).month, '2026-10');
+      assert.match(await handler(`conf ${alias} "2026-11 31"`), /between 0 and 30 days/);
+      assert.match(await handler(`conf ${alias} "2026-11 5.2"`), /updated: 1 month.*2026-11 5.2 days/);
+      assert.match(await handler(`dat ${dataset}`), /2026-11 5.2 days/);
+      assert.equal((await status())[dataset].latestDate, '2026-11');
+      assert.equal((await post('/api/monthly/update',{dataset,version:0,updates:[{month:'2026-12',value:1}]})).status,409);
+    }
     assert.equal(await handler('dat cet'),null);
     assert.equal((await get('/sunshine-data.mjs')).status,200);
     assert.equal((await get('/sunshine.html')).headers.get('Location'),'https://2319bli.github.io/weather-site-k/sunshine.html');

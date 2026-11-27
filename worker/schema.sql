@@ -19,3 +19,6 @@ CREATE TABLE IF NOT EXISTS login_limits (
   attempts INTEGER NOT NULL,
   expires_at INTEGER NOT NULL
 );
+INSERT OR IGNORE INTO state(key, value) VALUES
+  ('monthly-midair', '[]'), ('monthly-ukair', '[]'),
+  ('monthly-ewrd1', '[]'), ('monthly-ukrd1', '[]');

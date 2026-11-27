@@ -5,7 +5,7 @@ import uiAssets from './ui-assets.json';
 import { cookie, digest, sessionHash, SESSION_SECONDS, verifyPassword } from './auth.mjs';
 import { DATA_FILES, applyUpdates, csvText, forecastRows, latestDate, validateUpdates } from './data.mjs';
 import { EXTREME_FILES, EXTREME_URLS, mergeRecords, parseExtremeCsv, validateRecords } from '../public/extremes.mjs';
-import { SUNSHINE, sunshineDataset, sourceUrl, parseSunshine, appendSunshine } from '../public/sunshine-data.mjs';
+import { MONTHLY_DATASETS, monthlyDataset, parseMonthlyArchive, appendMonthly } from '../public/sunshine-data.mjs';
 
 const securityHeaders = {
   'Cache-Control': 'no-store',
@@ -61,7 +61,7 @@ async function saveDataset(env, key, value, version, datasets) {
 }
 async function datasetStatus(env) {
   const { results } = await env.DB.prepare(`SELECT key,value FROM state WHERE key='weather'
-    OR key LIKE 'updated-%' OR key LIKE 'extremes-%' OR key LIKE 'sunshine-%'`).all();
+    OR key LIKE 'updated-%' OR key LIKE 'extremes-%' OR key LIKE 'sunshine-%' OR key LIKE 'monthly-%'`).all();
   const values = Object.fromEntries(results.map(row => [row.key, row.value]));
   const weather = JSON.parse(values.weather);
   const latest = { ...baseline };
@@ -72,8 +72,8 @@ async function datasetStatus(env) {
     const lastYear = Math.max(Number(baseline[dataset].slice(0, 4)), ...Object.keys(overrides).map(Number));
     latest[dataset] = overrides[lastYear]?.iso || baseline[dataset];
   }
-  for (const dataset of Object.keys(SUNSHINE)) {
-    latest[dataset] = JSON.parse(values[`sunshine-${dataset}`] || '[]').at(-1)?.month || baseline[dataset];
+  for (const dataset of Object.keys(MONTHLY_DATASETS)) {
+    latest[dataset] = JSON.parse(values[monthlyDataset(dataset).stateKey] || '[]').at(-1)?.month || baseline[dataset];
   }
   return Object.entries(latest).map(([dataset, latestDate]) => ({
     dataset, latestDate, updatedAt: values[`updated-${dataset}`] || null
@@ -151,28 +151,28 @@ async function updateExtremes(request, env) {
   if (!await saveDataset(env, key, overrides, body.version, [body.dataset])) return json({ error: 'Records changed in another session. Run upd again to review the latest records.' }, 409);
   return json({ updated: records.length, version: body.version + 1 });
 }
-async function readSunshine(env, dataset) {
-  const info = sunshineDataset(dataset);
+async function readMonthly(env, dataset) {
+  const info = monthlyDataset(dataset);
   const [original, state] = await Promise.all([
-    originalCsv(env, `sunshine/${info.file}`), readState(env, `sunshine-${dataset}`)
+    originalCsv(env, info.archive), readState(env, info.stateKey)
   ]);
-  const data = parseSunshine(original);
+  const data = parseMonthlyArchive(original);
   const updates = state ? JSON.parse(state.value) : [];
-  if (updates.length) data.records = appendSunshine(data.records, updates);
-  return { ...data, dataset, label: info.label, unit: 'hours', sourceUrl: sourceUrl(dataset), version: state?.version || 0 };
+  if (updates.length) data.records = appendMonthly(data.records, updates, info.unit);
+  return { ...data, dataset, label: info.label, unit: info.unit, sourceUrl: info.sourceUrl, version: state?.version || 0 };
 }
-async function updateSunshine(request, env) {
+async function updateMonthly(request, env) {
   const body = await bodyJson(request);
-  sunshineDataset(body.dataset);
-  if (!Number.isSafeInteger(body.version) || body.version < 0) return json({ error: 'Supply the latest sunshine data version.' }, 400);
-  const key = `sunshine-${body.dataset}`;
+  const info = monthlyDataset(body.dataset);
+  if (!Number.isSafeInteger(body.version) || body.version < 0) return json({ error: 'Supply the latest monthly data version.' }, 400);
+  const key = info.stateKey;
   const before = await readState(env, key);
-  if (!before || before.version !== body.version) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
-  const data = await readSunshine(env, body.dataset);
-  if (data.version !== before.version) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
-  const merged = appendSunshine(data.records, body.updates);
+  if (!before || before.version !== body.version) return json({ error: 'Monthly data changed. Run the command again to load the latest month.' }, 409);
+  const data = await readMonthly(env, body.dataset);
+  if (data.version !== before.version) return json({ error: 'Monthly data changed. Run the command again to load the latest month.' }, 409);
+  const merged = appendMonthly(data.records, body.updates, info.unit);
   const updates = [...JSON.parse(before.value), ...merged.slice(data.records.length)];
-  if (!await saveDataset(env, key, updates, before.version, [body.dataset])) return json({ error: 'Sunshine data changed. Run the command again to load the latest month.' }, 409);
+  if (!await saveDataset(env, key, updates, before.version, [body.dataset])) return json({ error: 'Monthly data changed. Run the command again to load the latest month.' }, 409);
   return json({ dataset: body.dataset, updated: body.updates.length, latest: updates.at(-1), version: before.version + 1 });
 }
 async function route(request, env) {
@@ -180,9 +180,9 @@ async function route(request, env) {
   const path = url.pathname;
   const now = Math.floor(Date.now() / 1000);
   if (request.method === 'POST' && request.headers.get('Origin') !== url.origin) return json({ error: 'Invalid request origin.' }, 403);
-  const sunshine = Object.keys(SUNSHINE).find(key => path === `/data/${key}.json`);
-  if (sunshine && ['GET', 'HEAD'].includes(request.method)) {
-    const data = await readSunshine(env, sunshine);
+  const monthly = Object.keys(MONTHLY_DATASETS).find(key => path === `/data/${key}.json`);
+  if (monthly && ['GET', 'HEAD'].includes(request.method)) {
+    const data = await readMonthly(env, monthly);
     return response(request.method === 'HEAD' ? null : JSON.stringify(data), 200,
       { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
   }
@@ -214,7 +214,7 @@ async function route(request, env) {
     if (path === '/api/observed/update' && request.method === 'POST') return updateWeather(request, env, false);
     if (path === '/api/forecast/update' && request.method === 'POST') return updateWeather(request, env, true);
     if (path === '/api/extremes/update' && request.method === 'POST') return updateExtremes(request, env);
-    if (path === '/api/sunshine/update' && request.method === 'POST') return updateSunshine(request, env);
+    if (['/api/sunshine/update', '/api/monthly/update'].includes(path) && request.method === 'POST') return updateMonthly(request, env);
     if (path === '/api/terminal/saved' && request.method === 'GET') {
       const row = await readState(env, `terminal-${terminalIndex(url.searchParams.get('terminal'))}`);
       return json({ entries: row ? JSON.parse(row.value) : [] });

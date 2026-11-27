@@ -4,6 +4,23 @@ export const SUNSHINE = Object.freeze({
   suneaw: { label: 'England and Wales', file: 'England_and_Wales.txt' },
   sunmid: { label: 'Midlands', file: 'Midlands.txt' }
 });
+export const DAY_DATASETS = Object.freeze({
+  midair: { label: 'Midlands', file: 'Midlands.txt', series: 'AirFrost' },
+  ukair: { label: 'UK', file: 'UK.txt', series: 'AirFrost' },
+  ewrd1: { label: 'England and Wales', file: 'England_and_Wales.txt', series: 'Raindays1mm' },
+  ukrd1: { label: 'UK', file: 'UK.txt', series: 'Raindays1mm' }
+});
+export const MONTHLY_DATASETS = Object.freeze({ ...SUNSHINE, ...DAY_DATASETS });
+export function monthlyDataset(key) {
+  if (!Object.hasOwn(MONTHLY_DATASETS, key)) throw new Error('Unknown monthly dataset.');
+  const info = MONTHLY_DATASETS[key];
+  const series = info.series || 'Sunshine';
+  const metric = { AirFrost: 'air frost days', Raindays1mm: 'rain days ≥1 mm', Sunshine: 'sunshine' }[series];
+  return { ...info, metric, unit: info.series ? 'days' : 'hours',
+    archive: (info.series || 'sunshine') + '/' + info.file,
+    stateKey: (info.series ? 'monthly-' : 'sunshine-') + key,
+    sourceUrl: `https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/${series}/date/${info.file}` };
+}
 export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 export const PERIODS = {
   annual: [{ key: 'ann', label: 'Annual', months: [1,2,3,4,5,6,7,8,9,10,11,12], published: 'ann' }],
@@ -37,18 +54,18 @@ export function nextMonth(month) {
   return `${y + (m === 12 ? 1 : 0)}-${String(m === 12 ? 1 : m + 1).padStart(2,'0')}`;
 }
 function monthKey(year, month) { return month === 0 ? `${year - 1}-12` : `${year}-${String(month).padStart(2,'0')}`; }
-export function validateSunshineUpdates(updates) {
-  if (!Array.isArray(updates) || !updates.length || updates.length > 120) throw new Error('Supply 1–120 monthly sunshine totals.');
+export function validateMonthlyUpdates(updates, unit = 'hours') {
+  if (!Array.isArray(updates) || !updates.length || updates.length > 120) throw new Error('Supply 1–120 monthly totals.');
   return updates.map(row => {
     if (!row || !validMonth(row.month)) throw new Error('Use a valid month in YYYY-MM format (1910 onwards).');
     const [year, month] = row.month.split('-').map(Number);
-    const maxHours = new Date(Date.UTC(year, month, 0)).getUTCDate() * 24;
-    if (typeof row.value !== 'number' || !Number.isFinite(row.value) || row.value < 0 || row.value > maxHours) throw new Error(`Sunshine for ${row.month} must be between 0 and ${maxHours} hours.`);
+    const maximum = new Date(Date.UTC(year, month, 0)).getUTCDate() * (unit === 'hours' ? 24 : 1);
+    if (typeof row.value !== 'number' || !Number.isFinite(row.value) || row.value < 0 || row.value > maximum) throw new Error(`Value for ${row.month} must be between 0 and ${maximum} ${unit}.`);
     return { month: row.month, value: row.value };
   });
 }
-export function appendSunshine(records, updates) {
-  const checked = validateSunshineUpdates(updates);
+export function appendMonthly(records, updates, unit = 'hours') {
+  const checked = validateMonthlyUpdates(updates, unit);
   let expected = nextMonth(records.at(-1).month);
   for (const row of checked) {
     if (row.month !== expected) throw new Error(`Expected ${expected}; confirmed months must follow the latest month consecutively.`);
@@ -56,37 +73,45 @@ export function appendSunshine(records, updates) {
   }
   return [...records, ...checked];
 }
-export function parseSunshine(text) {
+export function parseMonthlyArchive(text) {
   const lines = text.replace(/\r/g, '').split('\n');
   const header = lines.findIndex(line => /^year\s+jan\s+feb\b/.test(line));
-  if (header < 0) throw new Error('Sunshine archive header is missing.');
+  if (header < 0) throw new Error('Monthly archive header is missing.');
   const columns = [...lines[header].matchAll(/\S+/g)].map(match => ({ key: match[0], end: match.index + match[0].length }));
-  if (columns.map(c => c.key).join(' ') !== 'year jan feb mar apr may jun jul aug sep oct nov dec win spr sum aut ann') throw new Error('Unexpected sunshine archive columns.');
+  if (columns.map(c => c.key).join(' ') !== 'year jan feb mar apr may jun jul aug sep oct nov dec win spr sum aut ann') throw new Error('Unexpected monthly archive columns.');
   const records = [], published = {};
   let previousYear = null;
   for (const line of lines.slice(header + 1).filter(line => line.trim())) {
     const year = Number(line.slice(0,4));
-    if (!/^\d{4}/.test(line) || year < 1910 || (previousYear !== null && year !== previousYear + 1)) throw new Error('Invalid sunshine archive year sequence.');
+    if (!/^\d{4}/.test(line) || year < 1000 || (previousYear !== null && year !== previousYear + 1)) throw new Error('Invalid monthly archive year sequence.');
     previousYear = year;
     published[year] = {};
     for (let i = 1; i < columns.length; i++) {
       // Blank future months retain their fixed-width columns before seasonal totals.
       const cell = line.slice(columns[i-1].end, columns[i].end).trim();
       if (!cell || cell === '---') continue;
-      if (!/^\d+(?:\.\d+)?$/.test(cell)) throw new Error(`Invalid sunshine value for ${year} ${columns[i].key}.`);
+      if (!/^\d+(?:\.\d+)?$/.test(cell)) throw new Error(`Invalid monthly value for ${year} ${columns[i].key}.`);
       const value = Number(cell);
       if (i <= 12) records.push({ month: monthKey(year,i), value });
       else published[year][columns[i].key] = value;
     }
   }
-  if (!records.length) throw new Error('Sunshine archive has no observations.');
+  if (!records.length) throw new Error('Monthly archive has no observations.');
   return { records, published, sourceUpdated: lines.find(line => line.startsWith('Last updated '))?.slice(13) || '' };
 }
-export function parseSunshineCommand(command) {
-  const match = /^(dat|conf)\s+(sunuk|suneng|suneaw|sunmid)\b\s*([\s\S]*)$/i.exec(command.trim());
+export function parseMonthlyCommand(command) {
+  const match = /^(dat|conf)\s+(\w+)\b\s*([\s\S]*)$/i.exec(command.trim());
   if (!match) return null;
-  const action = match[1].toLowerCase(), dataset = match[2].toLowerCase();
-  let body = match[3].trim();
+  const action = match[1].toLowerCase();
+  let dataset = match[2].toLowerCase(), body = match[3].trim();
+  if (dataset === 'air' || dataset === 'rd1') {
+    const region = /^(midair|ukair|ewrd1|ukrd1)\b\s*/i.exec(body);
+    if (region && !region[1].toLowerCase().endsWith(dataset)) throw new Error('Region code does not match this dataset.');
+    dataset = region ? region[1].toLowerCase() : dataset === 'air' ? 'midair' : 'ewrd1';
+    if (region) body = body.slice(region[0].length);
+  }
+  if (!Object.hasOwn(MONTHLY_DATASETS, dataset)) return null;
+  const { unit } = monthlyDataset(dataset);
   if (action === 'dat') {
     if (body) throw new Error(`Use dat ${dataset} without extra arguments.`);
     return { action, dataset };
@@ -94,12 +119,12 @@ export function parseSunshineCommand(command) {
   if (body.startsWith('"') && body.endsWith('"')) body = body.slice(1,-1).trim();
   const updates = body.split(/\r?\n/).filter(line => line.trim()).map(line => {
     const row = /^(\d{4}-\d{2})\s+(\d+(?:\.\d+)?)$/.exec(line.trim());
-    if (!row) throw new Error('Each line must be YYYY-MM followed by sunshine hours, for example 2026-10 86.3.');
+    if (!row) throw new Error(`Each line must be YYYY-MM followed by a value in ${unit}.`);
     return { month: row[1], value: Number(row[2]) };
   });
-  return { action, dataset, updates: validateSunshineUpdates(updates) };
+  return { action, dataset, updates: validateMonthlyUpdates(updates, unit) };
 }
-export function sunshineHistory(data, kind, key, toDate = false) {
+export function monthlyHistory(data, kind, key, toDate = false) {
   const period = PERIODS[kind]?.find(period => period.key === key);
   if (!period) throw new Error('Unknown sunshine period.');
   const values = new Map(data.records.map(row => [row.month, row.value]));
@@ -167,3 +192,7 @@ export function sunshineOutlook2027(data, kind) {
       coverage: row.count + ' confirmed + ' + projected + ' projected months', count, complete: count === months.length };
   });
 }
+
+// Keep the sunshine page and the original monthly API compatible.
+export { parseMonthlyArchive as parseSunshine, monthlyHistory as sunshineHistory,
+  appendMonthly as appendSunshine, validateMonthlyUpdates as validateSunshineUpdates, parseMonthlyCommand as parseSunshineCommand };
