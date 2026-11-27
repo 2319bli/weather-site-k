@@ -63,6 +63,13 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     assert.equal((await get('/api/terminal/datasets')).status, 401);
     assert.equal((await post('/api/login', { password: 'integration-test-only' }, { Origin: 'https://evil.test' })).status, 403);
     assert.equal((await post('/api/login', { password: 'wrong' })).status, 401);
+    const signInPage = await (await get('/login')).text();
+    assert.match(signInPage, /<html lang="en" data-seasonal>/);
+    assert.match(signInPage, /<option value="seasonal">Seasonal<\/option>/);
+    for (const asset of ['seasonal.css', 'seasonal-site.mjs?v=auto', 'seasonal-landscape.mjs', 'seasonal-art.mjs']) {
+      const response = await get('/' + asset);
+      assert.equal(response.status, 200, asset);
+    }
     const login = await post('/api/login', { password: 'integration-test-only' });
     assert.equal(login.status, 200);
     const setCookie = login.headers.get('Set-Cookie');
@@ -70,7 +77,10 @@ test('Worker protects all admin routes and persists shared updates', async () =>
     session = setCookie.split(';')[0];
     const page = await get('/terminal.html');
     assert.equal(page.status, 200);
-    assert.ok((await page.text()).includes('id="terminal-input"'));
+    const terminalPage = await page.text();
+    assert.ok(terminalPage.includes('id="terminal-input"'));
+    assert.match(terminalPage, /<html lang="en" data-seasonal>/);
+    assert.match(terminalPage, /<option value="seasonal">Seasonal<\/option>/);
     const status = async () => Object.fromEntries((await (await get('/api/terminal/datasets')).json()).map(row => [row.dataset, row]));
     const initial = await status();
     const baseline = require('../worker/baseline.json');

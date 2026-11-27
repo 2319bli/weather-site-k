@@ -1,6 +1,7 @@
 import terminalHtml from './terminal.html';
 import loginHtml from './login.html';
 import baseline from './baseline.json';
+import uiAssets from './ui-assets.json';
 import { cookie, digest, sessionHash, SESSION_SECONDS, verifyPassword } from './auth.mjs';
 import { DATA_FILES, applyUpdates, csvText, forecastRows, latestDate, validateUpdates } from './data.mjs';
 import { EXTREME_FILES, EXTREME_URLS, mergeRecords, parseExtremeCsv, validateRecords } from '../public/extremes.mjs';
@@ -238,7 +239,7 @@ async function route(request, env) {
     return json({ error: 'Unknown API endpoint or method.' }, 404);
   }
   if (request.method === 'GET' && ['/index.html', '/temperature.html', '/ewp.html', '/sunshine.html', '/threshold.html', '/hei.html', '/fei.html'].includes(path)) return redirect(new URL(path.slice(1), env.PUBLIC_SITE_URL).href);
-  if (['GET', 'HEAD'].includes(request.method) && ['/site.css', '/theme.css', '/appearance.js', '/logo.svg', '/sunshine-data.mjs'].includes(path)) return env.ASSETS.fetch(request);
+  if (['GET', 'HEAD'].includes(request.method) && uiAssets.includes(path.slice(1))) return env.ASSETS.fetch(request);
   return response('Not found', 404);
 }
 export default {

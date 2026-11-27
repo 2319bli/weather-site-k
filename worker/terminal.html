@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-seasonal>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -57,6 +57,30 @@
             --chart-bar-hover: #115e59;
             --chart-title: #111827;
             --code-text: #e0f2fe;
+        }
+
+        html[data-theme="seasonal"] {
+            --shell-bg: var(--ss-ink);
+            --shell-border: var(--ss-ink);
+            --output-bg: color-mix(in srgb, var(--ss-ink) 60%, #080c10);
+            --output-border: var(--shell-bg);
+            --input-bg: var(--output-bg);
+            --input-border: var(--ss-muted);
+            --input-focus: var(--ss-wash);
+            --input-focus-shadow: transparent;
+            --output-text: var(--ss-paper);
+            --input-text: var(--ss-paper);
+            --help-text: var(--ss-wash);
+            --code-text: var(--ss-paper);
+            --btn-primary-bg: var(--ss-paper);
+            --btn-primary-text: var(--ss-ink);
+            --btn-primary-border: var(--ss-paper);
+            --btn-secondary-text: var(--ss-paper);
+            --btn-secondary-border: var(--ss-edge);
+            --header-border: var(--ss-edge);
+            --tab-bg: var(--ss-paper);
+            --chart-axis: var(--ss-muted);
+            --chart-bar-hover: var(--ss-ink);
         }
 
         * {
@@ -392,7 +416,7 @@
 </style>
     <link rel="stylesheet" href="site.css?v=overview-1">
     <link rel="stylesheet" href="theme.css?v=design-1">
-    <script src="appearance.js?v=design-1"></script>
+    <link rel="stylesheet" href="seasonal.css?v=3"><script src="appearance.js?v=seasonal-2"></script>
     <link rel="icon" href="logo.svg" type="image/svg+xml">
 </head>
 <body>
@@ -406,6 +430,7 @@
         <label class="scheme-picker" for="theme-toggle">
             <span>Colour scheme</span>
             <select id="theme-toggle" class="theme-toggle">
+              <option value="seasonal">Seasonal</option>
               <option value="kimi-1">Daybreak</option>
               <option value="kimi-2">Midnight</option>
               <option value="kimi-3">Terracotta</option>
